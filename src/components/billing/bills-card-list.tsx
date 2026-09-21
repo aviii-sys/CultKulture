@@ -4,7 +4,7 @@ import React from 'react';
 import { Bill } from '@/types';
 import { formatISTDate, formatISTTime } from '@/lib/utils/dates';
 import { RupeeDisplay } from '@/components/common/rupee-display';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Receipt } from 'lucide-react';
 
 interface BillsCardListProps {
   bills: Bill[];
@@ -14,8 +14,14 @@ interface BillsCardListProps {
 export function BillsCardList({ bills, onSelectBill }: BillsCardListProps) {
   if (bills.length === 0) {
     return (
-      <div className="p-8 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border text-xs">
-        No bills found matching your criteria.
+      <div className="p-12 text-center text-muted-foreground bg-card rounded-3xl border border-dashed border-border flex flex-col items-center justify-center">
+        <div className="w-10 h-10 rounded-2xl bg-secondary flex items-center justify-center mb-2.5 text-muted-foreground">
+          <Receipt className="w-5 h-5" />
+        </div>
+        <p className="text-xs font-semibold text-foreground">No bills recorded yet</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          Complete a sale in POS to view receipts here.
+        </p>
       </div>
     );
   }
@@ -29,12 +35,12 @@ export function BillsCardList({ bills, onSelectBill }: BillsCardListProps) {
           <div
             key={bill.id}
             onClick={() => onSelectBill(bill.id)}
-            className="p-4 rounded-2xl border border-border bg-card hover:border-sky-500/60 shadow-2xs transition-all active:scale-[0.99] cursor-pointer space-y-3"
+            className="p-4 rounded-3xl border border-border bg-card hover:border-foreground/40 shadow-xs transition-all active:scale-[0.99] cursor-pointer space-y-3"
           >
             {/* Header: Bill Number, Status, Arrow */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-foreground">
+                <span className="font-mono font-bold text-sm text-foreground">
                   {bill.bill_number}
                 </span>
                 <span
@@ -60,7 +66,7 @@ export function BillsCardList({ bills, onSelectBill }: BillsCardListProps) {
                   <span className="text-[11px] text-muted-foreground">{bill.phone}</span>
                 )}
               </div>
-              <span className="font-medium px-2 py-0.5 rounded-md bg-secondary text-foreground text-[11px]">
+              <span className="font-medium px-2.5 py-0.5 rounded-full bg-secondary text-foreground text-[11px] border border-border/60">
                 {bill.payment_mode}
               </span>
             </div>

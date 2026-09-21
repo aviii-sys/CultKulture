@@ -116,21 +116,26 @@ export function BillsView({ initialBills }: BillsViewProps) {
   const voidedCount = filteredBills.filter((b) => b.status === 'voided').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header & New Bill Button */}
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Editorial Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            Bills & Sales History
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+              Sales Ledger
+            </h1>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
+              {filteredBills.length} records
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Audit trail of sequential bills (INV-YYYY-XXXX), status tracking, and returns.
+            Sequential audit trail of retail sales (INV-YYYY-XXXX), cash memos, and returns.
           </p>
         </div>
 
         <Link
           href="/billing"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-md shadow-sky-600/20 transition-all active:scale-95"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold bg-foreground text-background shadow-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>New Bill (POS)</span>
@@ -138,62 +143,62 @@ export function BillsView({ initialBills }: BillsViewProps) {
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-4 rounded-2xl border border-border bg-card shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-4 rounded-3xl border border-border bg-card shadow-xs">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
             Active Bills
           </span>
-          <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-1">
+          <div className="text-2xl font-extrabold text-foreground mt-1 tracking-tight">
             {activeBills.length}
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-border bg-card shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+        <div className="p-4 rounded-3xl border border-border bg-card shadow-xs">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
             Total Revenue
           </span>
-          <div className="text-xl sm:text-2xl font-extrabold text-foreground mt-1">
+          <div className="text-2xl font-extrabold text-foreground mt-1 tracking-tight">
             <RupeeDisplay amount={totalRevenue} size="xl" />
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-border bg-card shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-            Total Profit (Est)
+        <div className="p-4 rounded-3xl border border-border bg-card shadow-xs">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+            Net Profit (Realized)
           </span>
-          <div className="text-xl sm:text-2xl font-extrabold mt-1">
+          <div className="text-2xl font-extrabold mt-1 tracking-tight">
             <RupeeDisplay amount={totalProfit} size="xl" showColor />
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl border border-border bg-card shadow-2xs">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+        <div className="p-4 rounded-3xl border border-border bg-card shadow-xs">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
             Cancelled Bills
           </span>
-          <div className="text-xl sm:text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">
+          <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1 tracking-tight">
             {voidedCount}
           </div>
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div className="p-4 rounded-2xl border border-border bg-card shadow-xs space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+      {/* Sticky Filter Bar */}
+      <div className="p-3 sm:p-4 rounded-3xl border border-border bg-card shadow-xs space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
           {/* Search bar */}
           <div className="md:col-span-6 relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by Bill Number (e.g. INV-2026-0001), Customer, Phone..."
+              placeholder="Search by Bill No (e.g. INV-2026-0001), Customer, Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-9 rounded-xl border border-border bg-background text-xs font-medium outline-hidden focus:border-sky-500"
+              className="w-full h-10 pl-10 pr-9 rounded-2xl border border-border bg-background text-xs font-medium outline-hidden focus:border-foreground transition-colors"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -201,7 +206,7 @@ export function BillsView({ initialBills }: BillsViewProps) {
           </div>
 
           {/* Status Filter */}
-          <div className="md:col-span-3 flex rounded-xl bg-secondary p-1 border border-border">
+          <div className="md:col-span-3 flex rounded-2xl bg-secondary/60 p-1 border border-border">
             {(
               [
                 { key: 'ALL', label: 'All' },
@@ -213,7 +218,7 @@ export function BillsView({ initialBills }: BillsViewProps) {
                 key={tab.key}
                 type="button"
                 onClick={() => setStatusFilter(tab.key)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   statusFilter === tab.key
                     ? 'bg-card text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground'
@@ -229,7 +234,7 @@ export function BillsView({ initialBills }: BillsViewProps) {
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold outline-hidden focus:border-sky-500"
+              className="w-full h-10 px-3 rounded-2xl border border-border bg-background text-xs font-semibold outline-hidden focus:border-foreground transition-colors cursor-pointer"
             >
               <option value="ALL">All Dates</option>
               <option value="TODAY">Today</option>
@@ -243,7 +248,7 @@ export function BillsView({ initialBills }: BillsViewProps) {
                 type="date"
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
-                className="h-10 px-2 rounded-xl border border-border bg-background text-xs outline-hidden"
+                className="h-10 px-2 rounded-2xl border border-border bg-background text-xs outline-hidden"
               />
             )}
           </div>

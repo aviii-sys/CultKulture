@@ -5,7 +5,6 @@ import { RefreshCw, AlertCircle } from 'lucide-react';
 import { DashboardData, getDashboardDataAction } from '@/lib/actions/dashboard-actions';
 import { createClient } from '@/lib/supabase/client';
 import { DashboardProfitHero } from './dashboard-profit-hero';
-import { DashboardKpiGrid } from './dashboard-kpi-grid';
 import { DashboardTodaySection } from './dashboard-today-section';
 import { DashboardProfitChart } from './dashboard-profit-chart';
 import { DashboardComparisonCard } from './dashboard-comparison-card';
@@ -122,30 +121,22 @@ export function DashboardView({ initialData }: DashboardViewProps) {
 
   return (
     <div className="space-y-6 pb-6">
-      {/* 1. Primary Hero Card: Monthly Net Profit & Month Selector */}
+      {/* 1. Primary Hero Card: Monthly Net Profit, Editorial Greeting & Unified Hierarchy */}
       <DashboardProfitHero
         monthLabel={month_label}
         isCurrentMonth={is_current_month}
         profit={summary.month_profit}
         revenue={summary.month_revenue}
         cost={summary.month_cost}
+        billsCount={summary.month_bills_count}
+        itemsSold={summary.month_items_sold}
         availableMonths={available_months}
         selectedMonth={selectedMonth}
         onMonthChange={handleMonthChange}
         isLoading={isLoading}
       />
 
-      {/* 2. Monthly KPI Cards */}
-      <DashboardKpiGrid
-        revenue={summary.month_revenue}
-        cost={summary.month_cost}
-        profit={summary.month_profit}
-        discounts={summary.month_discounts}
-        billsCount={summary.month_bills_count}
-        itemsSold={summary.month_items_sold}
-      />
-
-      {/* 3. Today's Performance Section */}
+      {/* 2. Today's Performance Section */}
       <DashboardTodaySection
         todaySales={summary.today_sales}
         todayProfit={summary.today_profit}

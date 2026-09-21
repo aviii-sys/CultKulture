@@ -158,30 +158,24 @@ export function BillDetailModal({
 
       const waUrl = getWhatsAppUrl(bill.phone, message);
 
-      if (res.signedUrl) {
-        // Trigger download for user to attach if desired
-        const link = document.createElement('a');
-        link.href = res.signedUrl;
-        link.download = res.fileName || `${bill.bill_number}.pdf`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (!res.signedUrl) {
+        handleDownloadPdf();
       }
 
       window.open(waUrl, '_blank');
       setPdfNotice(
         bill.phone
-          ? 'Opened WhatsApp. If sending the bill PDF, please attach the downloaded file.'
+          ? 'Opened WhatsApp. Please attach the downloaded bill PDF if desired.'
           : 'Opened WhatsApp. Please select a contact and attach the bill PDF.'
       );
     } catch (err: unknown) {
+      setPdfError(err instanceof Error ? err.message : 'Failed to share');
+    } finally {
       setIsPdfLoading(false);
-      setPdfError(err instanceof Error ? err.message : 'Failed to open WhatsApp');
     }
   };
 
-  // 3. Web Share Action
+  // 3. Native Web Share Action
   const handleNativeShare = async () => {
     if (!bill) return;
     setIsPdfLoading(true);
@@ -190,8 +184,10 @@ export function BillDetailModal({
 
     try {
       const res = await getOrGenerateBillPdfAction(bill.id);
+      setIsPdfLoading(false);
+
       if (res.error || !res.signedUrl) {
-        setPdfError(res.error || 'Failed to generate PDF for sharing');
+        setPdfError(res.error || 'Failed to generate PDF');
         return;
       }
 
@@ -234,22 +230,22 @@ export function BillDetailModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
-        <div className="bg-card w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="bg-card w-full max-w-2xl rounded-3xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
           {/* Header */}
-          <div className="p-4 sm:p-5 border-b border-border bg-secondary/30 flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+          <div className="p-4 sm:p-5 border-b border-border bg-secondary/20 flex items-start justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center text-foreground font-bold border border-border/60">
                 <Receipt className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-foreground">
+                  <h3 className="text-lg font-extrabold font-mono text-foreground">
                     {bill ? bill.bill_number : 'Bill Details'}
                   </h3>
                   {bill && (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         isVoided
                           ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
                           : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
@@ -277,7 +273,8 @@ export function BillDetailModal({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+              aria-label="Close bill details"
             >
               <X className="w-5 h-5" />
             </button>
@@ -285,15 +282,15 @@ export function BillDetailModal({
 
           {/* Quick Action Toolbar (Download PDF, Share, WhatsApp) */}
           {bill && !loading && (
-            <div className="px-4 py-2.5 sm:px-6 bg-secondary/10 border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="px-4 py-3 sm:px-6 bg-secondary/30 border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleDownloadPdf}
                   disabled={isPdfLoading}
-                  className="py-1.5 px-3 rounded-lg border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  className="py-1.5 px-3 rounded-xl border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
                 >
-                  <Download className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <Download className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>{isPdfLoading ? 'Generating...' : 'Download PDF'}</span>
                 </button>
 
@@ -301,9 +298,9 @@ export function BillDetailModal({
                   type="button"
                   onClick={handleNativeShare}
                   disabled={isPdfLoading}
-                  className="py-1.5 px-3 rounded-lg border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  className="py-1.5 px-3 rounded-xl border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
                 >
-                  <Share2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Share</span>
                 </button>
 
@@ -311,7 +308,7 @@ export function BillDetailModal({
                   type="button"
                   onClick={handleWhatsAppShare}
                   disabled={isPdfLoading}
-                  className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="py-1.5 px-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span>WhatsApp</span>
@@ -320,7 +317,7 @@ export function BillDetailModal({
 
               {isVoided && (
                 <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                  PDF will be marked VOIDED
+                  Bill Cancelled (Marked VOID)
                 </span>
               )}
             </div>
@@ -330,20 +327,20 @@ export function BillDetailModal({
           <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
             {loading && (
               <div className="py-16 text-center text-muted-foreground space-y-2">
-                <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-xs font-medium">Loading bill details...</p>
               </div>
             )}
 
             {errorMsg && (
-              <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center gap-2">
+              <div className="p-4 rounded-2xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {pdfError && (
-              <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center justify-between gap-2">
+              <div className="p-3.5 rounded-2xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{pdfError}</span>
@@ -360,7 +357,7 @@ export function BillDetailModal({
             )}
 
             {pdfNotice && (
-              <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 text-xs border border-sky-200 dark:border-sky-900/50">
+              <div className="p-3 rounded-2xl bg-secondary/50 text-foreground text-xs border border-border">
                 {pdfNotice}
               </div>
             )}
@@ -369,7 +366,7 @@ export function BillDetailModal({
               <>
                 {/* Voided Notice if applicable */}
                 {isVoided && (
-                  <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-200 space-y-1">
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-200 space-y-1">
                     <div className="flex items-center gap-1.5 font-bold">
                       <Ban className="w-4 h-4 text-rose-600" />
                       <span>This bill was cancelled on {formatISTDate(bill.voided_at)} at {formatISTTime(bill.voided_at)}</span>
@@ -383,7 +380,7 @@ export function BillDetailModal({
                 )}
 
                 {/* Customer & Payment Meta */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl border border-border bg-secondary/20 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl border border-border bg-secondary/20 text-xs">
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Customer</span>
                     <span className="font-semibold text-foreground">{bill.customer_name}</span>
@@ -410,43 +407,43 @@ export function BillDetailModal({
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Purchased Items ({bill.items.length})
                   </h4>
-                  <div className="rounded-xl border border-border overflow-hidden">
+                  <div className="rounded-2xl border border-border overflow-hidden">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-secondary/40 border-b border-border text-muted-foreground">
+                      <thead className="bg-secondary/30 border-b border-border text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
                         <tr>
-                          <th className="p-2.5 font-semibold">Item</th>
-                          <th className="p-2.5 font-semibold text-center">Qty</th>
-                          <th className="p-2.5 font-semibold text-right">Unit Price</th>
-                          <th className="p-2.5 font-semibold text-right">Discount</th>
-                          <th className="p-2.5 font-semibold text-right">Final Amount</th>
+                          <th className="p-3 font-semibold">Item</th>
+                          <th className="p-3 font-semibold text-center">Qty</th>
+                          <th className="p-3 font-semibold text-right">Unit Price</th>
+                          <th className="p-3 font-semibold text-right">Discount</th>
+                          <th className="p-3 font-semibold text-right">Final Amount</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border/60">
+                      <tbody className="divide-y divide-border/50">
                         {bill.items.map((item) => (
                           <tr key={item.id} className="hover:bg-secondary/20 transition-colors">
-                            <td className="p-2.5 font-medium">
+                            <td className="p-3 font-medium">
                               <div className="font-bold text-foreground">{item.product_name}</div>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] px-1.5 py-0.2 rounded-sm bg-secondary text-foreground">
+                                <span className="text-[10px] px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
                                   {item.colour}
                                 </span>
-                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-sm bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
                                   {item.size}
                                 </span>
                               </div>
                             </td>
-                            <td className="p-2.5 text-center font-bold">{item.qty}</td>
-                            <td className="p-2.5 text-right font-medium">
+                            <td className="p-3 text-center font-bold">{item.qty}</td>
+                            <td className="p-3 text-right font-medium">
                               {formatIndianRupees(item.unit_selling_price)}
                             </td>
-                            <td className="p-2.5 text-right text-rose-600 dark:text-rose-400">
+                            <td className="p-3 text-right text-rose-600 dark:text-rose-400">
                               {item.line_discount + (item.allocated_bill_discount || 0) > 0
                                 ? `-${formatIndianRupees(
                                     item.line_discount + (item.allocated_bill_discount || 0)
                                   )}`
                                 : '-'}
                             </td>
-                            <td className="p-2.5 text-right font-bold text-foreground">
+                            <td className="p-3 text-right font-bold text-foreground">
                               {formatIndianRupees(item.line_total)}
                             </td>
                           </tr>
@@ -481,7 +478,7 @@ export function BillDetailModal({
 
                   {bill.total_discount > 0 && (
                     <div className="flex justify-between font-semibold text-foreground pt-1 border-t border-dashed border-border/60">
-                      <span>Total Savings / Discount</span>
+                      <span>Total Savings</span>
                       <span className="text-rose-600 dark:text-rose-400">
                         -{formatIndianRupees(bill.total_discount)}
                       </span>
@@ -490,17 +487,17 @@ export function BillDetailModal({
 
                   <div className="flex justify-between items-baseline pt-2 border-t border-border font-bold">
                     <span className="text-sm text-foreground">Grand Total</span>
-                    <RupeeDisplay amount={bill.total} size="xl" className="text-sky-600 dark:text-sky-400" />
+                    <RupeeDisplay amount={bill.total} size="xl" className="text-foreground font-bold" />
                   </div>
                 </div>
 
                 {/* Internal Profit / Cost Section (Owner View Only) */}
-                <div className="p-3.5 rounded-2xl border border-border bg-secondary/30 text-xs">
+                <div className="p-4 rounded-2xl border border-border bg-secondary/20 text-xs">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-foreground">
+                    <div className="flex items-center gap-2 font-bold text-foreground">
                       <span>Internal Cost & Profit Analysis</span>
-                      <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300">
-                        Store Owner Only
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
+                        Owner Only
                       </span>
                     </div>
                     <button
@@ -515,7 +512,7 @@ export function BillDetailModal({
 
                   {showInternalProfit && (
                     <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 animate-in fade-in duration-150">
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <span className="text-[11px] text-muted-foreground block">
                           Total Cost (Snapshotted)
                         </span>
@@ -523,7 +520,7 @@ export function BillDetailModal({
                           {formatIndianRupees(bill.total_cost)}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <span className="text-[11px] text-muted-foreground block">
                           Net Profit Realized
                         </span>
@@ -537,7 +534,7 @@ export function BillDetailModal({
           </div>
 
           {/* Footer with Void Option & Close */}
-          <div className="p-4 border-t border-border bg-secondary/20 flex items-center justify-between gap-3">
+          <div className="p-4 border-t border-border bg-secondary/10 flex items-center justify-between gap-3">
             <div>
               {bill && !isVoided && (
                 <button
@@ -559,7 +556,7 @@ export function BillDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-bold hover:bg-secondary transition-colors cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-card border border-border text-xs font-bold hover:bg-secondary transition-colors cursor-pointer"
             >
               Close
             </button>

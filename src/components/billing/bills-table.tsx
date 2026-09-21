@@ -4,7 +4,7 @@ import React from 'react';
 import { Bill } from '@/types';
 import { formatISTDate, formatISTTime } from '@/lib/utils/dates';
 import { RupeeDisplay } from '@/components/common/rupee-display';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Receipt } from 'lucide-react';
 
 interface BillsTableProps {
   bills: Bill[];
@@ -14,16 +14,22 @@ interface BillsTableProps {
 export function BillsTable({ bills, onSelectBill }: BillsTableProps) {
   if (bills.length === 0) {
     return (
-      <div className="p-12 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
-        No bills found matching your criteria.
+      <div className="p-16 text-center text-muted-foreground bg-card rounded-3xl border border-dashed border-border flex flex-col items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mb-3 text-muted-foreground">
+          <Receipt className="w-6 h-6" />
+        </div>
+        <p className="text-sm font-semibold text-foreground">No bills recorded yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Complete a sale in the POS register to view sales receipts here.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+    <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-xs">
       <table className="w-full text-left text-xs">
-        <thead className="bg-secondary/40 border-b border-border text-muted-foreground uppercase font-semibold text-[11px] tracking-wider">
+        <thead className="bg-secondary/30 border-b border-border text-muted-foreground uppercase font-bold text-[10px] tracking-wider">
           <tr>
             <th className="p-4">Bill Number</th>
             <th className="p-4">Customer</th>
@@ -35,7 +41,7 @@ export function BillsTable({ bills, onSelectBill }: BillsTableProps) {
             <th className="p-4 text-center w-10"></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border/60">
+        <tbody className="divide-y divide-border/50">
           {bills.map((bill) => {
             const isVoided = bill.status === 'voided';
 
@@ -46,7 +52,7 @@ export function BillsTable({ bills, onSelectBill }: BillsTableProps) {
                 className="hover:bg-secondary/30 transition-colors cursor-pointer group"
               >
                 {/* Bill Number */}
-                <td className="p-4 font-bold text-foreground group-hover:text-sky-600 dark:group-hover:text-sky-400">
+                <td className="p-4 font-mono font-bold text-foreground group-hover:underline">
                   {bill.bill_number}
                 </td>
 
@@ -66,7 +72,7 @@ export function BillsTable({ bills, onSelectBill }: BillsTableProps) {
 
                 {/* Payment Method */}
                 <td className="p-4">
-                  <span className="font-medium px-2 py-0.5 rounded-md bg-secondary text-foreground text-[11px]">
+                  <span className="font-medium px-2.5 py-0.5 rounded-full bg-secondary border border-border/60 text-foreground text-[11px]">
                     {bill.payment_mode}
                   </span>
                 </td>
@@ -93,7 +99,7 @@ export function BillsTable({ bills, onSelectBill }: BillsTableProps) {
                 {/* Status */}
                 <td className="p-4 text-center">
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                       isVoided
                         ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
                         : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'

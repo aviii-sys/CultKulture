@@ -34,7 +34,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
   const [selectedSize, setSelectedSize] = useState<string>('ALL');
   const [stockStatusFilter, setStockStatusFilter] = useState<'ALL' | 'LOW' | 'OUT'>('ALL');
   const [showArchived, setShowArchived] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
 
   // Modal states
   const [historyTarget, setHistoryTarget] = useState<{ variant: Variant; product: Product } | null>(
@@ -147,6 +147,20 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
     selectedSize,
     stockStatusFilter,
   ]);
+
+  // Group filtered items by product for Pinterest-style visual discovery grid
+  const filteredProductsGrouped = useMemo(() => {
+    const map = new Map<string, { product: Product; variants: Variant[] }>();
+    filteredItems.forEach(({ product, variant }) => {
+      const existing = map.get(product.id);
+      if (existing) {
+        existing.variants.push(variant);
+      } else {
+        map.set(product.id, { product, variants: [variant] });
+      }
+    });
+    return Array.from(map.values());
+  }, [filteredItems]);
 
   // KPI Calculations
   const stats = useMemo(() => {
@@ -306,8 +320,8 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Instant search by product, brand, colour, size, category..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-input bg-background/50 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="Search products, brands, colours..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-input bg-background/50 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary"
             />
             {searchQuery && (
               <button
@@ -324,6 +338,18 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
           <div className="hidden md:flex items-center rounded-xl border border-border bg-secondary/50 p-1">
             <button
               type="button"
+              onClick={() => setViewMode('cards')}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === 'cards'
+                  ? 'bg-card text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Visual Grid view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-colors ${
                 viewMode === 'table'
@@ -333,18 +359,6 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
               title="Table view"
             >
               <TableIcon className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('cards')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                viewMode === 'cards'
-                  ? 'bg-card text-foreground shadow-xs font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Card view"
-            >
-              <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -356,7 +370,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="ALL">All Categories</option>
               {categories.map((c) => (
@@ -372,7 +386,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
             <select
               value={selectedColour}
               onChange={(e) => setSelectedColour(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="ALL">All Colours</option>
               {colours.map((col) => (
@@ -388,7 +402,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
             <select
               value={selectedSize}
               onChange={(e) => setSelectedSize(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="px-3 py-1.5 rounded-xl border border-input bg-background text-foreground text-xs focus:outline-hidden focus:ring-2 focus:ring-primary"
             >
               <option value="ALL">All Sizes</option>
               {sizes.map((s) => (
@@ -430,7 +444,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
             onClick={() => setShowArchived(!showArchived)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium transition-colors border ${
               showArchived
-                ? 'bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border-sky-300 dark:border-sky-800'
+                ? 'bg-secondary text-foreground border-border font-bold'
                 : 'bg-secondary/70 text-muted-foreground border-transparent hover:text-foreground'
             }`}
           >
@@ -452,9 +466,8 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
         </div>
       </div>
 
-      {/* Main List Rendering */}
-      {/* Desktop rendering based on viewMode */}
-      <div className="hidden md:block">
+      {/* Main Content Area */}
+      <div>
         {viewMode === 'table' ? (
           <ProductTable
             items={filteredItems}
@@ -465,7 +478,7 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
           />
         ) : (
           <ProductCardList
-            items={filteredItems}
+            products={filteredProductsGrouped}
             onOpenHistory={(v, p) => setHistoryTarget({ variant: v, product: p })}
             onOpenRestock={(v, p) => setRestockTarget({ variant: v, product: p })}
             onOpenEditVariant={(v, p) => setEditVariantTarget({ variant: v, product: p })}
@@ -474,10 +487,10 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
         )}
       </div>
 
-      {/* Mobile rendering: always clean cards with big touch targets */}
+      {/* Mobile rendering */}
       <div className="md:hidden">
         <ProductCardList
-          items={filteredItems}
+          products={filteredProductsGrouped}
           onOpenHistory={(v, p) => setHistoryTarget({ variant: v, product: p })}
           onOpenRestock={(v, p) => setRestockTarget({ variant: v, product: p })}
           onOpenEditVariant={(v, p) => setEditVariantTarget({ variant: v, product: p })}

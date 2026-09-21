@@ -334,7 +334,7 @@ export function PosScreen({ initialProducts }: PosScreenProps) {
           <ShoppingCart className="w-3.5 h-3.5" />
           <span>Cart ({cartItemCount})</span>
           {cartItemCount > 0 && (
-            <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-sky-600 text-white ml-1">
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-foreground text-background ml-1">
               {formatIndianRupees(cartGrandTotal)}
             </span>
           )}

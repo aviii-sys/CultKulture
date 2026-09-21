@@ -1,23 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PlusCircle,
   Clock,
-  Sliders,
   Edit3,
-  AlertTriangle,
-  XCircle,
-  CheckCircle2,
-  Archive,
+  Sliders,
+  Layers,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { Product, Variant } from '@/types';
 import { formatIndianRupees } from '@/lib/utils/currency';
-import { formatISTDate } from '@/lib/utils/dates';
-import { FlatInventoryItem } from './product-table';
+import { ProductImagePlaceholder } from '@/components/common/product-image-placeholder';
+
+export interface ProductGroupedItem {
+  product: Product;
+  variants: Variant[];
+}
 
 interface ProductCardListProps {
-  items: FlatInventoryItem[];
+  products: ProductGroupedItem[];
   onOpenHistory: (variant: Variant, product: Product) => void;
   onOpenRestock: (variant: Variant, product: Product) => void;
   onOpenEditVariant: (variant: Variant, product: Product) => void;
@@ -25,161 +28,176 @@ interface ProductCardListProps {
 }
 
 export function ProductCardList({
-  items,
+  products,
   onOpenHistory,
   onOpenRestock,
   onOpenEditVariant,
   onOpenEditProduct,
 }: ProductCardListProps) {
-  if (items.length === 0) {
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+
+  if (products.length === 0) {
     return (
-      <div className="p-8 text-center text-muted-foreground border border-border rounded-2xl bg-card">
-        <p className="text-sm font-medium">No inventory items match the current filters.</p>
+      <div className="py-20 text-center border border-border/80 rounded-3xl bg-card p-8 space-y-3 shadow-2xs">
+        <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto text-muted-foreground/60">
+          <Sparkles className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-extrabold text-foreground">No pieces in your collection yet</h3>
+        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+          Stock your boutique collection with apparel, suits, jackets, and accessories using the Add Stock button.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {items.map(({ product, variant }) => {
-        const isOutOfStock = variant.quantity === 0;
-        const isLowStock = !isOutOfStock && variant.quantity <= variant.low_stock_threshold;
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+      {products.map(({ product, variants }) => {
+        const totalStock = variants.reduce((sum, v) => sum + v.quantity, 0);
+        const hasVariants = variants.length > 0;
+        const prices = variants.map((v) => v.selling_price);
+        const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+        const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+        const priceLabel =
+          minPrice === maxPrice
+            ? formatIndianRupees(minPrice)
+            : `${formatIndianRupees(minPrice)} – ${formatIndianRupees(maxPrice)}`;
+
+        const isOutOfStock = hasVariants && totalStock === 0;
+        const isLowStock =
+          !isOutOfStock &&
+          variants.some((v) => v.quantity <= (v.low_stock_threshold ?? 2));
+
+        const primaryColour = variants[0]?.colour;
+        const isExpanded = expandedProductId === product.id;
 
         return (
           <div
-            key={variant.id}
-            className="p-4 rounded-2xl border border-border bg-card shadow-2xs space-y-3"
+            key={product.id}
+            className="group rounded-2xl border border-border/80 bg-card overflow-hidden flex flex-col justify-between transition-all duration-200 card-hover-lift shadow-2xs"
           >
-            {/* Top Row: Product Title & Category */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h3 className="font-bold text-base text-foreground leading-tight">
-                    {product.name}
-                  </h3>
-                  {product.brand && (
-                    <span className="text-[11px] font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                      {product.brand}
-                    </span>
-                  )}
-                  {product.archived && (
-                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <Archive className="w-2.5 h-2.5" />
-                      Archived
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  <span>{product.category}</span>
-                  <span>•</span>
-                  <span>Updated {formatISTDate(variant.updated_at)}</span>
-                </div>
+            {/* Visual Image Header with Progressive Actions */}
+            <div className="relative overflow-hidden cursor-pointer" onClick={() => onOpenEditProduct(product)}>
+              <ProductImagePlaceholder
+                name={product.name}
+                category={product.category}
+                colour={primaryColour}
+                aspectRatio="aspect-[4/5]"
+                className="group-hover:scale-102 transition-transform duration-300"
+              />
+
+              {/* Stock Status Badge */}
+              <div className="absolute top-2.5 right-2.5 z-20">
+                {isOutOfStock ? (
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-900/90 text-rose-100 backdrop-blur-xs border border-rose-700/50 shadow-xs">
+                    OUT
+                  </span>
+                ) : isLowStock ? (
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-900/90 text-amber-100 backdrop-blur-xs border border-amber-700/50 shadow-xs">
+                    LOW ({totalStock})
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-background/80 text-foreground/80 backdrop-blur-xs border border-border/40 shadow-xs">
+                    {totalStock} in stock
+                  </span>
+                )}
               </div>
 
-              {/* Edit Product Button */}
+              {/* Floating Quick Edit on Hover */}
               <button
                 type="button"
-                onClick={() => onOpenEditProduct(product)}
-                className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/80 transition-colors"
-                title="Edit product"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenEditProduct(product);
+                }}
+                className="absolute bottom-2.5 right-2.5 z-20 p-1.5 rounded-xl bg-background/90 backdrop-blur-xs text-foreground/80 hover:text-foreground border border-border/60 shadow-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit Product"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Middle Row: Variant Colour/Size & Stock Badge */}
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
-              <div className="flex items-center gap-1.5">
-                <span className="px-2.5 py-1 rounded-lg bg-secondary text-foreground text-xs font-semibold">
-                  {variant.colour}
-                </span>
-                <span className="text-muted-foreground font-bold">/</span>
-                <span className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold border border-sky-200 dark:border-sky-800">
-                  {variant.size}
-                </span>
+            {/* Product Details Section */}
+            <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 space-y-2.5">
+              <div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate">
+                    {product.brand || product.category}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 font-medium">
+                    {variants.length} {variants.length === 1 ? 'variant' : 'variants'}
+                  </span>
+                </div>
+
+                <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate mt-0.5 leading-snug">
+                  {product.name}
+                </h4>
+
+                <p className="text-xs sm:text-sm font-black text-foreground mt-1 tracking-tight">
+                  {priceLabel}
+                </p>
               </div>
 
-              {/* Status Badge */}
-              <div>
-                {isOutOfStock ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60">
-                    <XCircle className="w-3 h-3" />
-                    OUT OF STOCK
+              {/* Quick Restock / Expand Bar */}
+              <div className="pt-2 border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => setExpandedProductId(isExpanded ? null : product.id)}
+                  className="w-full py-1.5 px-2 rounded-xl bg-secondary/60 hover:bg-secondary text-foreground text-[11px] font-semibold flex items-center justify-between transition-colors"
+                >
+                  <span className="flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-muted-foreground" />
+                    <span>Variants</span>
                   </span>
-                ) : isLowStock ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60">
-                    <AlertTriangle className="w-3 h-3" />
-                    LOW ({variant.quantity})
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                    In Stock
-                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Expanded Variants Drawer */}
+                {isExpanded && (
+                  <div className="mt-2 space-y-1.5 pt-1.5 border-t border-border/40 animate-in fade-in duration-150">
+                    {variants.map((v) => (
+                      <div
+                        key={v.id}
+                        className="p-1.5 rounded-lg bg-background border border-border/50 flex items-center justify-between text-[10px]"
+                      >
+                        <div className="flex items-center gap-1 font-semibold truncate">
+                          <span>{v.colour}</span>
+                          <span>/</span>
+                          <span className="text-primary">{v.size}</span>
+                          <span className="text-muted-foreground font-normal">({v.quantity})</span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onOpenRestock(v, product)}
+                            className="p-1 rounded-md bg-secondary hover:bg-secondary/80 text-foreground"
+                            title="Restock variant"
+                          >
+                            <PlusCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditVariant(v, product)}
+                            className="p-1 rounded-md bg-secondary hover:bg-secondary/80 text-foreground"
+                            title="Edit variant"
+                          >
+                            <Sliders className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onOpenHistory(v, product)}
+                            className="p-1 rounded-md bg-secondary hover:bg-secondary/80 text-foreground"
+                            title="Stock history"
+                          >
+                            <Clock className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            </div>
-
-            {/* Financials Row: Stock Qty, Selling Price, Cost */}
-            <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-muted/40 border border-border/70 text-center">
-              <div>
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Stock</span>
-                <span
-                  className={`font-extrabold text-sm tabular-nums ${
-                    isOutOfStock
-                      ? 'text-rose-600 dark:text-rose-400'
-                      : isLowStock
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-foreground'
-                  }`}
-                >
-                  {variant.quantity}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Selling</span>
-                <span className="font-extrabold text-sm text-foreground tabular-nums">
-                  {formatIndianRupees(variant.selling_price)}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground block">Avg Cost</span>
-                <span className="font-semibold text-xs text-muted-foreground tabular-nums">
-                  {formatIndianRupees(variant.cost_price)}
-                </span>
-              </div>
-            </div>
-
-            {/* Bottom Actions: Large touch targets */}
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => onOpenRestock(variant, product)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs min-h-[44px]"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Restock</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onOpenHistory(variant, product)}
-                className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-foreground hover:bg-secondary/80 border border-border transition-colors min-h-[44px]"
-                title="View stock history"
-              >
-                <Clock className="w-4 h-4" />
-                <span className="hidden xs:inline">History</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onOpenEditVariant(variant, product)}
-                className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-secondary text-foreground hover:bg-secondary/80 border border-border transition-colors min-h-[44px]"
-                title="Edit variant details"
-              >
-                <Sliders className="w-4 h-4" />
-                <span className="hidden xs:inline">Edit</span>
-              </button>
             </div>
           </div>
         );

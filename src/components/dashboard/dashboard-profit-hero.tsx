@@ -4,6 +4,7 @@ import React from 'react';
 import { Calendar, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
 import { RupeeDisplay } from '@/components/common/rupee-display';
 import { formatIndianRupees } from '@/lib/utils/currency';
+import { formatISTDate } from '@/lib/utils/dates';
 
 interface DashboardProfitHeroProps {
   monthLabel: string;
@@ -11,10 +12,22 @@ interface DashboardProfitHeroProps {
   profit: number;
   revenue: number;
   cost: number;
+  billsCount?: number;
+  itemsSold?: number;
   availableMonths: Array<{ value: string; label: string }>;
   selectedMonth: string;
   onMonthChange: (newMonth: string) => void;
   isLoading?: boolean;
+}
+
+function getEditorialGreeting(): string {
+  // Asia/Kolkata current hour
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  const istHours = (utcHours + 5.5) % 24;
+  if (istHours < 12) return 'Good morning';
+  if (istHours < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export function DashboardProfitHero({
@@ -23,48 +36,41 @@ export function DashboardProfitHero({
   profit,
   revenue,
   cost,
+  billsCount = 0,
+  itemsSold = 0,
   availableMonths,
   selectedMonth,
   onMonthChange,
   isLoading = false,
 }: DashboardProfitHeroProps) {
+  const greeting = getEditorialGreeting();
+  const todayFormatted = formatISTDate(new Date());
   const isNegative = profit < 0;
   const isZero = profit === 0;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card to-secondary/30 p-6 sm:p-8 shadow-xs">
-      {/* Background ambient glow */}
-      <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-sky-500/10 dark:bg-sky-500/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-64 h-64 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Title and Subtitle */}
+    <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-2xs">
+      {/* Editorial Greeting Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              {isCurrentMonth ? "This Month's Net Profit" : `${monthLabel} Net Profit`}
-            </span>
-            {isCurrentMonth && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>LIVE</span>
-              </span>
-            )}
-          </div>
-          <h1 className="text-xs sm:text-sm text-muted-foreground mt-0.5 font-medium">
-            Total active revenue minus cost of goods sold (IST)
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+            {greeting}, Cult Kulture
           </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {todayFormatted} • Asia/Kolkata Store Time
+          </p>
         </div>
 
-        {/* Month Selector Dropdown */}
-        <div className="relative inline-block">
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-border bg-background/80 hover:bg-secondary/70 backdrop-blur-sm transition-colors text-xs font-bold text-foreground cursor-pointer shadow-2xs">
-            <Calendar className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+        {/* Minimal Month Selector Dropdown */}
+        <div className="relative inline-block self-start sm:self-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border/80 bg-secondary/50 hover:bg-secondary text-foreground text-xs font-semibold cursor-pointer transition-colors shadow-2xs">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <select
               value={selectedMonth}
               onChange={(e) => onMonthChange(e.target.value)}
               disabled={isLoading}
               className="bg-transparent outline-hidden cursor-pointer font-bold pr-4 appearance-none text-xs"
+              aria-label="Select report month"
             >
               {availableMonths.map((m) => (
                 <option key={m.value} value={m.value} className="bg-card text-foreground py-1">
@@ -77,22 +83,34 @@ export function DashboardProfitHero({
         </div>
       </div>
 
-      {/* Hero Profit Metric */}
-      <div className="relative z-10 mt-6 pt-2">
-        <div className="flex flex-wrap items-baseline gap-3">
+      {/* Prominent Financial Hero: Monthly Profit */}
+      <div className="pt-6">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {isCurrentMonth ? "This Month's Net Profit" : `${monthLabel} Net Profit`}
+          </span>
+          {isCurrentMonth && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>LIVE</span>
+            </span>
+          )}
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-baseline gap-3">
           <RupeeDisplay
             amount={profit}
             size="2xl"
             showColor
-            className="text-4xl sm:text-6xl font-extrabold tracking-tight"
+            className="text-4xl sm:text-6xl font-black tracking-tight"
           />
 
           {!isZero && (
             <div
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${
                 isNegative
-                  ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
-                  : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                  ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60'
+                  : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60'
               }`}
             >
               {isNegative ? (
@@ -107,24 +125,42 @@ export function DashboardProfitHero({
           )}
         </div>
 
-        {/* Calculation formula explanation */}
-        <div className="mt-4 pt-4 border-t border-border/60 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span>Net Revenue:</span>
-            <span className="font-semibold text-foreground">
+        {/* Supporting Metrics in Subtle Editorial Hierarchy */}
+        <div className="mt-6 pt-5 border-t border-border/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Revenue
+            </span>
+            <p className="text-base font-bold text-foreground tracking-tight">
               {formatIndianRupees(revenue)}
-            </span>
+            </p>
           </div>
-          <span className="hidden sm:inline text-muted-foreground/40">•</span>
-          <div className="flex items-center gap-2">
-            <span>Cost of Goods Sold:</span>
-            <span className="font-semibold text-foreground">
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Cost of Goods
+            </span>
+            <p className="text-base font-bold text-foreground tracking-tight">
               {formatIndianRupees(cost)}
-            </span>
+            </p>
           </div>
-          <span className="hidden sm:inline text-muted-foreground/40">•</span>
-          <div className="text-[11px] text-muted-foreground/80">
-            Voided bills excluded
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Total Bills
+            </span>
+            <p className="text-base font-bold text-foreground tracking-tight">
+              {billsCount}
+            </p>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Items Sold
+            </span>
+            <p className="text-base font-bold text-foreground tracking-tight">
+              {itemsSold}
+            </p>
           </div>
         </div>
       </div>

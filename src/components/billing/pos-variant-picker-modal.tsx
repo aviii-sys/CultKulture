@@ -5,6 +5,7 @@ import { X, Plus, Minus, Check, AlertCircle, ShoppingBag } from 'lucide-react';
 import { ProductWithVariants, Variant } from '@/types';
 import { formatIndianRupees } from '@/lib/utils/currency';
 import { RupeeDisplay } from '@/components/common/rupee-display';
+import { ProductImagePlaceholder } from '@/components/common/product-image-placeholder';
 
 interface PosVariantPickerModalProps {
   product: ProductWithVariants | null;
@@ -162,33 +163,42 @@ export function PosVariantPickerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card w-full max-w-lg rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-card w-full max-w-lg rounded-3xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-border bg-secondary/30">
-          <div>
+        <div className="flex items-center gap-3.5 p-4 sm:p-5 border-b border-border bg-secondary/20">
+          <div className="w-12 h-14 rounded-xl overflow-hidden shrink-0 border border-border/60">
+            <ProductImagePlaceholder
+              name={product.name}
+              category={product.category}
+              colour={selectedColour}
+              aspectRatio="aspect-square"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
                 {product.category}
               </span>
               {product.brand && (
-                <span className="text-xs text-muted-foreground font-medium">
+                <span className="text-xs text-muted-foreground font-medium truncate">
                   {product.brand}
                 </span>
               )}
             </div>
-            <h3 className="text-lg font-bold mt-1 text-foreground">{product.name}</h3>
+            <h3 className="text-base font-bold text-foreground truncate mt-0.5">{product.name}</h3>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+            aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-5 overflow-y-auto">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           {errorMsg && (
             <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -198,7 +208,7 @@ export function PosVariantPickerModal({
 
           {/* 1. Colour Selection */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
               1. Select Colour
             </label>
             <div className="flex flex-wrap gap-2">
@@ -209,13 +219,13 @@ export function PosVariantPickerModal({
                     key={col}
                     type="button"
                     onClick={() => handleColourSelect(col)}
-                    className={`px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all flex items-center gap-1.5 ${
+                    className={`px-3.5 py-2 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-xs'
+                        ? 'border-foreground bg-foreground text-background shadow-xs'
                         : 'border-border bg-card hover:bg-secondary text-foreground'
                     }`}
                   >
-                    {isSelected && <Check className="w-3.5 h-3.5 text-sky-500" />}
+                    {isSelected && <Check className="w-3.5 h-3.5" />}
                     <span>{col}</span>
                   </button>
                 );
@@ -225,7 +235,7 @@ export function PosVariantPickerModal({
 
           {/* 2. Size Selection */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
               2. Select Size
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -238,25 +248,25 @@ export function PosVariantPickerModal({
                     type="button"
                     disabled={isOutOfStock}
                     onClick={() => handleSizeSelect(v.size)}
-                    className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                    className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
                       isSelected
-                        ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold shadow-xs'
+                        ? 'border-foreground bg-foreground/5 font-bold shadow-xs ring-1 ring-foreground'
                         : isOutOfStock
-                        ? 'border-border/50 bg-secondary/30 text-muted-foreground/50 opacity-60 cursor-not-allowed'
+                        ? 'border-border/40 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed opacity-60'
                         : 'border-border bg-card hover:bg-secondary text-foreground font-semibold'
                     }`}
                   >
-                    <span className="text-base">{v.size}</span>
+                    <span className="text-sm">{v.size}</span>
                     <span
                       className={`text-[10px] mt-0.5 ${
                         isOutOfStock
                           ? 'text-rose-500 font-medium'
                           : v.quantity <= 2
-                          ? 'text-amber-500 font-medium'
+                          ? 'text-amber-600 font-medium'
                           : 'text-muted-foreground'
                       }`}
                     >
-                      {isOutOfStock ? 'Out of stock' : `${v.quantity} in stock`}
+                      {isOutOfStock ? 'Sold out' : `${v.quantity} in stock`}
                     </span>
                   </button>
                 );
@@ -266,11 +276,11 @@ export function PosVariantPickerModal({
 
           {/* Variant Detail Box */}
           {selectedVariant && (
-            <div className="p-4 rounded-xl border border-border bg-secondary/20 space-y-3">
+            <div className="p-3.5 rounded-2xl border border-border bg-secondary/30 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Product & Variant:</span>
+                <span className="text-muted-foreground">Selection:</span>
                 <span className="font-semibold text-foreground">
-                  {product.name} ({selectedVariant.colour} / {selectedVariant.size})
+                  {selectedVariant.colour} • {selectedVariant.size}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
@@ -289,7 +299,7 @@ export function PosVariantPickerModal({
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Default Selling Price:</span>
+                <span className="text-muted-foreground">Standard Retail Price:</span>
                 <span className="font-semibold text-muted-foreground">
                   {formatIndianRupees(selectedVariant.selling_price)}
                 </span>
@@ -298,10 +308,10 @@ export function PosVariantPickerModal({
           )}
 
           {/* 3. Pricing, Discount & Quantity Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* Quantity */}
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                 Quantity
               </label>
               <div className="flex items-center border border-border rounded-xl bg-card overflow-hidden h-11">
@@ -309,7 +319,7 @@ export function PosVariantPickerModal({
                   type="button"
                   disabled={qty <= 1}
                   onClick={() => setQty((prev) => Math.max(1, prev - 1))}
-                  className="px-3 h-full hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 h-full hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
@@ -328,20 +338,20 @@ export function PosVariantPickerModal({
                   type="button"
                   disabled={qty >= remainingStock}
                   onClick={() => setQty((prev) => Math.min(prev + 1, remainingStock))}
-                  className="px-3 h-full hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-3 h-full hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Selling Price (Can be negotiated) */}
+            {/* Selling Price */}
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                Selling Price (₹)
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Unit Price (₹)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
                   ₹
                 </span>
                 <input
@@ -353,18 +363,18 @@ export function PosVariantPickerModal({
                     const clean = e.target.value.replace(/\D/g, '');
                     setCustomPriceOverride(clean);
                   }}
-                  className="w-full h-11 pl-7 pr-3 rounded-xl border border-border bg-card font-bold text-sm outline-hidden focus:border-sky-500 transition-colors"
+                  className="w-full h-11 pl-7 pr-3 rounded-xl border border-border bg-card font-bold text-sm outline-hidden focus:border-foreground transition-colors"
                 />
               </div>
             </div>
 
             {/* Line Discount */}
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
                 Discount (₹)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
                   ₹
                 </span>
                 <input
@@ -376,22 +386,22 @@ export function PosVariantPickerModal({
                     const clean = e.target.value.replace(/\D/g, '');
                     setItemDiscount(clean);
                   }}
-                  className="w-full h-11 pl-7 pr-3 rounded-xl border border-border bg-card font-bold text-sm outline-hidden focus:border-sky-500 transition-colors"
+                  className="w-full h-11 pl-7 pr-3 rounded-xl border border-border bg-card font-bold text-sm outline-hidden focus:border-foreground transition-colors"
                 />
               </div>
             </div>
           </div>
 
           {/* Line summary */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-secondary/40 border border-border">
             <div>
-              <span className="text-xs text-muted-foreground block">Line Total</span>
-              <span className="text-xs text-sky-700 dark:text-sky-300 font-medium">
+              <span className="text-[11px] text-muted-foreground block font-medium">Line Total</span>
+              <span className="text-xs text-foreground font-semibold">
                 {qty} × {formatIndianRupees(unitPrice)}
                 {discountVal > 0 && ` - ${formatIndianRupees(discountVal)} discount`}
               </span>
             </div>
-            <RupeeDisplay amount={lineNet} size="lg" className="text-sky-700 dark:text-sky-300" />
+            <RupeeDisplay amount={lineNet} size="lg" className="text-foreground font-bold" />
           </div>
         </div>
 
@@ -400,7 +410,7 @@ export function PosVariantPickerModal({
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2.5 rounded-xl border border-border font-semibold text-sm hover:bg-secondary transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-border font-semibold text-xs hover:bg-secondary transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -408,7 +418,7 @@ export function PosVariantPickerModal({
             type="button"
             disabled={!selectedVariant || remainingStock <= 0}
             onClick={handleAdd}
-            className="flex-1 py-3 px-5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-5 rounded-xl bg-foreground text-background font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>ADD TO BILL</span>

@@ -18,10 +18,10 @@ import {
   Tag,
   Receipt,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { CartItem, PaymentMode } from '@/types';
 import { formatIndianRupees } from '@/lib/utils/currency';
-import { RupeeDisplay } from '@/components/common/rupee-display';
 
 interface PosCartProps {
   cart: CartItem[];
@@ -48,7 +48,7 @@ interface PosCartProps {
 export function PosCart({
   cart,
   onUpdateQty,
-  onUpdatePrice,
+  onUpdatePrice: _onUpdatePrice,
   onUpdateDiscount,
   onRemoveItem,
   onClearCart,
@@ -68,7 +68,7 @@ export function PosCart({
 }: PosCartProps) {
   const [showProfitPreview, setShowProfitPreview] = useState(false);
 
-  // Calculations
+  // Financial Calculations
   const subtotal = cart.reduce(
     (sum, item) => sum + item.qty * item.unit_selling_price,
     0
@@ -82,7 +82,7 @@ export function PosCart({
   const totalDiscount = totalItemDiscounts + safeBillDiscount;
   const grandTotal = Math.max(0, netAfterItemDiscounts - safeBillDiscount);
 
-  // Internal profit estimate
+  // Internal profit estimate for owner
   const estimatedCost = cart.reduce(
     (sum, item) => sum + item.qty * item.cost_price,
     0
@@ -90,20 +90,20 @@ export function PosCart({
   const estimatedProfit = grandTotal - estimatedCost;
 
   return (
-    <div className="flex flex-col h-full bg-card rounded-2xl border border-border overflow-hidden shadow-xs">
-      {/* Cart Header */}
-      <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-sm">
+    <div className="flex flex-col h-full bg-card rounded-3xl border border-border/80 overflow-hidden shadow-2xs">
+      {/* Cart Drawer Header */}
+      <div className="p-4 border-b border-border/70 bg-secondary/30 flex items-center justify-between select-none">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-2xs">
             {cart.length}
           </div>
           <div>
-            <h3 className="font-bold text-sm text-foreground">Current Sale</h3>
-            <p className="text-[11px] text-muted-foreground">
-              {cart.length === 0
-                ? 'Cart is empty'
-                : `${cart.reduce((s, i) => s + i.qty, 0)} items in bill`}
-            </p>
+            <h3 className="font-extrabold text-xs sm:text-sm text-foreground">
+              Current Sale Cart
+            </h3>
+            <span className="text-[10px] text-muted-foreground font-medium">
+              {cart.reduce((s, i) => s + i.qty, 0)} total units selected
+            </span>
           </div>
         </div>
 
@@ -111,24 +111,25 @@ export function PosCart({
           <button
             type="button"
             onClick={onClearCart}
-            className="text-xs font-semibold text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
+            disabled={isSubmitting}
+            className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 transition-colors p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Clear</span>
+            <span>Reset</span>
           </button>
         )}
       </div>
 
       {/* Cart Items List */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 min-h-[160px] max-h-[380px] sm:max-h-none">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {cart.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-secondary/60 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 opacity-40" />
+          <div className="py-16 text-center text-muted-foreground space-y-2.5 select-none">
+            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto text-muted-foreground/50">
+              <ShoppingBag className="w-5 h-5" />
             </div>
-            <p className="text-sm font-medium">No items added to bill yet</p>
-            <p className="text-xs max-w-xs">
-              Search products on the left and select color/size to add to this bill.
+            <p className="text-xs font-bold text-foreground/80">Cart is currently empty</p>
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+              Select garments from the collection on the left to start billing.
             </p>
           </div>
         ) : (
@@ -139,23 +140,21 @@ export function PosCart({
             return (
               <div
                 key={item.variant_id}
-                className="p-3.5 rounded-xl border border-border bg-background/50 hover:bg-background/80 transition-all space-y-2.5 shadow-2xs"
+                className="p-3.5 rounded-2xl border border-border/80 bg-secondary/20 space-y-2.5 transition-all"
               >
-                {/* Product Name, Variant Badge & Delete */}
+                {/* Product Title & Variant Badge */}
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h4 className="font-semibold text-sm text-foreground leading-tight">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-extrabold text-xs text-foreground truncate">
                       {item.product_name}
                     </h4>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-secondary text-foreground">
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                      <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
                         {item.colour}
                       </span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300">
+                      <span>/</span>
+                      <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
                         {item.size}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground ml-1">
-                        (Stock: {item.available_stock})
                       </span>
                     </div>
                   </div>
@@ -163,94 +162,67 @@ export function PosCart({
                   <button
                     type="button"
                     onClick={() => onRemoveItem(item.variant_id)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    disabled={isSubmitting}
+                    className="p-1 rounded-lg text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                     title="Remove item"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Line Item Controls: Qty, Price, Discount */}
-                <div className="grid grid-cols-12 gap-2 items-center pt-1 border-t border-border/50 text-xs">
-                  {/* Quantity Stepper */}
-                  <div className="col-span-4 flex items-center border border-border rounded-lg bg-card overflow-hidden h-8">
+                {/* Stepper, Unit Rate & Total */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {/* Quantity Stepper (Min 44px touch) */}
+                  <div className="flex items-center rounded-xl border border-border/90 bg-background p-0.5 shadow-2xs">
                     <button
                       type="button"
-                      disabled={item.qty <= 1}
                       onClick={() => onUpdateQty(item.variant_id, item.qty - 1)}
-                      className="px-2 h-full hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={isSubmitting || item.qty <= 1}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={item.qty}
-                      onChange={(e) => {
-                        const parsed = parseInt(e.target.value.replace(/\D/g, ''), 10) || 1;
-                        onUpdateQty(item.variant_id, parsed);
-                      }}
-                      className="w-full text-center font-bold text-xs bg-transparent outline-hidden"
-                    />
+                    <span className="w-9 text-center font-black text-xs text-foreground tabular-nums">
+                      {item.qty}
+                    </span>
                     <button
                       type="button"
-                      disabled={item.qty >= item.available_stock}
                       onClick={() => onUpdateQty(item.variant_id, item.qty + 1)}
-                      className="px-2 h-full hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={isSubmitting || item.qty >= item.available_stock}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  {/* Negotiated Selling Price Input */}
-                  <div className="col-span-4 relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-[11px]">
-                      ₹
+                  {/* Line Total */}
+                  <div className="text-right">
+                    <span className="text-xs font-black text-foreground tabular-nums">
+                      {formatIndianRupees(lineNet)}
                     </span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      title="Selling price per unit for this bill"
-                      value={item.unit_selling_price}
-                      onChange={(e) => {
-                        const clean = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
-                        onUpdatePrice(item.variant_id, clean);
-                      }}
-                      className="w-full h-8 pl-5 pr-1.5 rounded-lg border border-border bg-card font-bold text-xs text-right outline-hidden focus:border-sky-500"
-                    />
-                  </div>
-
-                  {/* Per-Item Discount */}
-                  <div className="col-span-4 relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-[11px]">
-                      -₹
+                    <span className="block text-[10px] text-muted-foreground">
+                      @{formatIndianRupees(item.unit_selling_price)}
                     </span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      title="Per-item discount in ₹"
-                      placeholder="0"
-                      value={item.line_discount || ''}
-                      onChange={(e) => {
-                        const clean = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
-                        onUpdateDiscount(item.variant_id, clean);
-                      }}
-                      className="w-full h-8 pl-6 pr-1.5 rounded-lg border border-border bg-card font-bold text-xs text-right outline-hidden focus:border-sky-500 text-rose-600 dark:text-rose-400"
-                    />
                   </div>
                 </div>
 
-                {/* Line Total */}
-                <div className="flex items-center justify-between text-xs pt-1 text-muted-foreground">
-                  <span className="text-[11px]">
-                    {item.qty} × {formatIndianRupees(item.unit_selling_price)}
-                    {item.line_discount > 0 && ` (-₹${item.line_discount})`}
-                  </span>
-                  <div className="font-bold text-foreground">
-                    <RupeeDisplay amount={lineNet} size="sm" />
+                {/* Bargain Adjustment / Line Discount Drawer */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40 text-[10px]">
+                  <div className="flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground font-semibold">Disc / Piece:</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground font-bold">₹</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={item.unit_selling_price}
+                      value={item.line_discount || ''}
+                      onChange={(e) => onUpdateDiscount(item.variant_id, Number(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-16 h-6 px-1.5 rounded-md border border-input bg-background text-right font-bold text-[11px] focus:outline-hidden focus:ring-1 focus:ring-primary"
+                    />
                   </div>
                 </div>
               </div>
@@ -259,196 +231,160 @@ export function PosCart({
         )}
       </div>
 
-      {/* Cart Footer & Checkout Controls */}
-      <div className="p-4 border-t border-border bg-secondary/20 space-y-4">
-        {/* Customer Information (Optional) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <div className="relative">
-            <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Customer Name (Walk-in)"
-              value={customerName}
-              onChange={(e) => onCustomerNameChange(e.target.value)}
-              className="w-full h-9 pl-8 pr-3 rounded-xl border border-border bg-card text-xs font-medium outline-hidden focus:border-sky-500"
-            />
-          </div>
-          <div className="relative">
-            <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="tel"
-              placeholder="Phone (e.g. 98765 43210)"
-              value={customerPhone}
-              onChange={(e) => onCustomerPhoneChange(e.target.value)}
-              className="w-full h-9 pl-8 pr-3 rounded-xl border border-border bg-card text-xs font-medium outline-hidden focus:border-sky-500"
-            />
-          </div>
-        </div>
-
-        {/* Payment Method Selector */}
-        <div>
-          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-            Payment Mode
-          </label>
-          <div className="grid grid-cols-4 gap-1.5">
-            {(
-              [
-                { mode: 'Cash', icon: Banknote },
-                { mode: 'UPI', icon: Smartphone },
-                { mode: 'Card', icon: CreditCard },
-                { mode: 'Split', icon: Split },
-              ] as const
-            ).map(({ mode, icon: Icon }) => {
-              const isSelected = paymentMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => onPaymentModeChange(mode)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center gap-1 ${
-                    isSelected
-                      ? 'border-sky-500 bg-sky-500 text-white shadow-xs'
-                      : 'border-border bg-card hover:bg-secondary text-foreground'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{mode}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Split note if selected */}
-          {paymentMode === 'Split' && (
-            <div className="mt-2 animate-in fade-in duration-150">
+      {/* Customer & Checkout Form Section */}
+      {cart.length > 0 && (
+        <div className="p-4 border-t border-border/80 bg-secondary/20 space-y-4">
+          {/* Customer Inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="relative">
+              <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
-                placeholder="e.g. Cash ₹1000, UPI ₹500"
-                value={splitNotes}
-                onChange={(e) => onSplitNotesChange(e.target.value)}
-                className="w-full h-8 px-3 rounded-lg border border-sky-400 bg-card text-xs outline-hidden"
+                placeholder="Customer Name (Optional)"
+                value={customerName}
+                onChange={(e) => onCustomerNameChange(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 rounded-xl border border-input bg-background text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary"
               />
             </div>
-          )}
-        </div>
 
-        {/* Bill-Level Discount */}
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <label className="font-semibold text-muted-foreground flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5" />
-            <span>Bill Discount</span>
-          </label>
-          <div className="relative w-32">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-              ₹
+            <div className="relative">
+              <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="tel"
+                placeholder="Phone (for WhatsApp bill)"
+                value={customerPhone}
+                onChange={(e) => onCustomerPhoneChange(e.target.value)}
+                className="w-full h-9 pl-9 pr-3 rounded-xl border border-input bg-background text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          {/* Payment Method Selector */}
+          <div>
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+              Payment Method
             </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="0"
-              value={billDiscount || ''}
-              onChange={(e) => {
-                const clean = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
-                onBillDiscountChange(clean);
-              }}
-              className="w-full h-8 pl-6 pr-2 rounded-lg border border-border bg-card font-bold text-xs text-right outline-hidden focus:border-sky-500"
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-4 gap-1.5 text-xs font-bold select-none">
+              {(['Cash', 'UPI', 'Card', 'Split'] as PaymentMode[]).map((mode) => {
+                const isSelected = paymentMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onPaymentModeChange(mode)}
+                    className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground shadow-2xs font-extrabold'
+                        : 'bg-secondary/70 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {mode === 'Cash' && <Banknote className="w-3.5 h-3.5" />}
+                    {mode === 'UPI' && <Smartphone className="w-3.5 h-3.5" />}
+                    {mode === 'Card' && <CreditCard className="w-3.5 h-3.5" />}
+                    {mode === 'Split' && <Split className="w-3.5 h-3.5" />}
+                    <span className="text-[10px]">{mode}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* Summary Breakdown */}
-        <div className="space-y-1.5 pt-2 border-t border-border/60 text-xs">
-          <div className="flex justify-between text-muted-foreground">
-            <span>Subtotal</span>
-            <span>{formatIndianRupees(subtotal)}</span>
+            {paymentMode === 'Split' && (
+              <input
+                type="text"
+                placeholder="Split notes (e.g. ₹2,000 Cash + ₹4,400 UPI)"
+                value={splitNotes}
+                onChange={(e) => onSplitNotesChange(e.target.value)}
+                className="w-full h-8 px-3 mt-2 rounded-xl border border-input bg-background text-xs font-medium focus:outline-hidden"
+              />
+            )}
           </div>
 
-          {totalItemDiscounts > 0 && (
-            <div className="flex justify-between text-rose-600 dark:text-rose-400">
-              <span>Item Discounts</span>
-              <span>-{formatIndianRupees(totalItemDiscounts)}</span>
+          {/* Bill-level Flat Discount */}
+          <div className="flex items-center justify-between text-xs pt-1">
+            <span className="font-semibold text-muted-foreground">Overall Bill Discount:</span>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-muted-foreground">₹</span>
+              <input
+                type="number"
+                min="0"
+                max={netAfterItemDiscounts}
+                value={billDiscount || ''}
+                onChange={(e) => onBillDiscountChange(Number(e.target.value) || 0)}
+                placeholder="0"
+                className="w-20 h-7 px-2 rounded-lg border border-input bg-background text-right font-bold text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          {/* Financial Totals Summary */}
+          <div className="p-3.5 rounded-2xl bg-secondary/50 border border-border/80 space-y-1.5 text-xs">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Gross Subtotal:</span>
+              <span>{formatIndianRupees(subtotal)}</span>
+            </div>
+
+            {totalDiscount > 0 && (
+              <div className="flex justify-between text-rose-600 dark:text-rose-400 font-semibold">
+                <span>Total Discounts:</span>
+                <span>-{formatIndianRupees(totalDiscount)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-baseline pt-2 border-t border-border/60">
+              <span className="font-extrabold text-sm text-foreground">Total Due:</span>
+              <span className="text-xl font-black text-foreground tracking-tight">
+                {formatIndianRupees(grandTotal)}
+              </span>
+            </div>
+
+            {/* Owner Profit Estimate Toggle */}
+            <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => setShowProfitPreview(!showProfitPreview)}
+                className="flex items-center gap-1 font-semibold hover:text-foreground transition-colors cursor-pointer"
+              >
+                {showProfitPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                <span>{showProfitPreview ? 'Hide Cost/Profit' : 'Owner Profit Estimate'}</span>
+              </button>
+
+              {showProfitPreview && (
+                <span className={`font-bold ${estimatedProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  Est. Net Profit: {formatIndianRupees(estimatedProfit)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
-          {safeBillDiscount > 0 && (
-            <div className="flex justify-between text-rose-600 dark:text-rose-400">
-              <span>Bill Discount</span>
-              <span>-{formatIndianRupees(safeBillDiscount)}</span>
-            </div>
-          )}
-
-          {totalDiscount > 0 && (
-            <div className="flex justify-between font-semibold text-foreground pt-1 border-t border-dashed border-border/40">
-              <span>Total Discount</span>
-              <span>-{formatIndianRupees(totalDiscount)}</span>
-            </div>
-          )}
-
-          {/* Grand Total */}
-          <div className="flex justify-between items-baseline pt-2 border-t border-border font-bold text-foreground">
-            <span className="text-sm">Grand Total</span>
-            <RupeeDisplay amount={grandTotal} size="xl" className="text-sky-600 dark:text-sky-400" />
-          </div>
-        </div>
-
-        {/* Profit Preview (Internal Only) */}
-        <div className="pt-1">
+          {/* Primary CTA: Complete Sale */}
           <button
             type="button"
-            onClick={() => setShowProfitPreview(!showProfitPreview)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            onClick={onCompleteSale}
+            disabled={isSubmitting || cart.length === 0}
+            className="w-full py-3.5 px-4 rounded-2xl bg-primary text-primary-foreground font-black text-sm tracking-wide flex items-center justify-center gap-2 shadow-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 min-h-[48px]"
           >
-            {showProfitPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            <span>{showProfitPreview ? 'Hide' : 'Show'} Internal Profit Preview</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Completing Sale...</span>
+              </>
+            ) : (
+              <>
+                <Receipt className="w-4 h-4" />
+                <span>COMPLETE SALE ({formatIndianRupees(grandTotal)})</span>
+              </>
+            )}
           </button>
-
-          {showProfitPreview && (
-            <div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between font-bold text-amber-700 dark:text-amber-300">
-                <span>Estimated Profit</span>
-                <RupeeDisplay amount={estimatedProfit} showColor size="sm" />
-              </div>
-              <div className="flex justify-between text-muted-foreground text-[11px]">
-                <span>Revenue:</span>
-                <span>{formatIndianRupees(grandTotal)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground text-[11px]">
-                <span>Estimated Cost:</span>
-                <span>{formatIndianRupees(estimatedCost)}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground italic pt-1 border-t border-amber-500/20">
-                Authoritative profit is calculated server-side by create_bill().
-              </p>
-            </div>
-          )}
         </div>
-
-        {/* Error message */}
-        {errorMessage && (
-          <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* COMPLETE SALE Button */}
-        <button
-          type="button"
-          disabled={cart.length === 0 || isSubmitting}
-          onClick={onCompleteSale}
-          className="w-full py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base flex items-center justify-center gap-2 shadow-lg shadow-sky-600/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {isSubmitting ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <Receipt className="w-5 h-5" />
-              <span>COMPLETE SALE • {formatIndianRupees(grandTotal)}</span>
-            </>
-          )}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

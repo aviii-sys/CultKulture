@@ -62,8 +62,8 @@ export function VoidConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-card w-full max-w-md rounded-2xl border border-destructive/30 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-card w-full max-w-md rounded-3xl border border-destructive/30 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-border bg-destructive/10 flex items-center justify-between">
           <div className="flex items-center gap-2.5 text-destructive font-bold text-base">
@@ -72,7 +72,7 @@ export function VoidConfirmModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

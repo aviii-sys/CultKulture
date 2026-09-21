@@ -46,7 +46,7 @@ export function PosSuccessModal({
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [prevBillId, setPrevBillId] = useState<string | null>(null);
 
-  // Reset state during render when a new bill arrives (official React recommendation)
+  // Reset state during render when a new bill arrives
   if (billData?.bill_id && billData.bill_id !== prevBillId) {
     setPrevBillId(billData.bill_id);
     setSignedUrl(null);
@@ -89,7 +89,7 @@ export function PosSuccessModal({
 
   if (!isOpen || !billData) return null;
 
-  // Manual Retry PDF Generation (isolated from sale creation)
+  // Manual Retry PDF Generation
   const handleRetry = async () => {
     setIsGenerating(true);
     setPdfError(null);
@@ -210,28 +210,28 @@ export function PosSuccessModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="bg-card w-full max-w-md rounded-3xl border border-border shadow-2xl p-5 sm:p-7 text-center space-y-5 max-h-[95vh] overflow-y-auto">
-        {/* Animated Checkmark */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
-          <CheckCircle2 className="w-9 h-9 sm:w-10 sm:h-10" />
+        {/* Animated Checkmark Badge */}
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
+          <CheckCircle2 className="w-8 h-8 sm:w-9 h-9" />
         </div>
 
         <div>
-          <span className="text-[11px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase">
+          <span className="text-[10px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase">
             Sale Completed Successfully
           </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 text-foreground">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 text-foreground font-mono">
             {billData.bill_number}
           </h2>
         </div>
 
-        {/* Bill Receipt Card */}
-        <div className="p-3.5 sm:p-4 rounded-2xl border border-border bg-secondary/30 space-y-2.5 text-left text-xs">
-          <div className="flex justify-between items-baseline border-b border-border/50 pb-2">
+        {/* Bill Receipt Card (Boutique Cash Memo Style) */}
+        <div className="p-4 rounded-2xl border border-border bg-secondary/30 space-y-2.5 text-left text-xs">
+          <div className="flex justify-between items-baseline border-b border-border/60 pb-2.5">
             <span className="text-muted-foreground font-medium">Grand Total</span>
-            <RupeeDisplay amount={billData.total} size="xl" className="text-foreground" />
+            <RupeeDisplay amount={billData.total} size="xl" className="text-foreground font-bold" />
           </div>
 
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center pt-1">
             <span className="text-muted-foreground font-medium">Customer</span>
             <span className="font-semibold text-foreground">
               {billData.customer_name || 'Walk-in Customer'}
@@ -247,15 +247,15 @@ export function PosSuccessModal({
 
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">Payment Mode</span>
-            <span className="font-semibold text-foreground px-2 py-0.5 rounded-md bg-secondary border border-border/60">
+            <span className="font-semibold text-foreground px-2.5 py-0.5 rounded-full bg-secondary border border-border text-[11px]">
               {billData.payment_mode || 'Cash'}
             </span>
           </div>
         </div>
 
-        {/* PDF Failure Banner & TRY AGAIN button (isolated from sale creation) */}
+        {/* PDF Failure Banner */}
         {pdfError && (
-          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-2 text-left animate-in fade-in">
+          <div className="p-3.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-2 text-left animate-in fade-in">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{pdfError}</span>
@@ -264,7 +264,7 @@ export function PosSuccessModal({
               type="button"
               onClick={handleRetry}
               disabled={isGenerating}
-              className="w-full py-2 px-3 rounded-lg bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+              className="w-full py-2 px-3 rounded-xl bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
               <span>TRY AGAIN</span>
@@ -272,14 +272,14 @@ export function PosSuccessModal({
           </div>
         )}
 
-        {/* Status Notice if applicable */}
+        {/* Status Notice */}
         {statusNotice && !pdfError && (
-          <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/50 text-sky-800 dark:text-sky-300 text-[11px] text-left">
+          <div className="p-3 rounded-2xl bg-secondary/50 border border-border text-foreground text-[11px] text-left">
             {statusNotice}
           </div>
         )}
 
-        {/* Action Priority (Mobile First): 1. Share, 2. WhatsApp, 3. Download PDF */}
+        {/* Actions (Share, WhatsApp, Download PDF) */}
         <div className="space-y-2.5 pt-1">
           <div className="grid grid-cols-2 gap-2.5">
             {/* 1. Share Button */}
@@ -287,7 +287,7 @@ export function PosSuccessModal({
               type="button"
               onClick={handleNativeShare}
               disabled={isGenerating}
-              className="py-3 px-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-sky-600/20 transition-all cursor-pointer disabled:opacity-50"
+              className="py-3 px-3.5 rounded-2xl bg-foreground text-background font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 shadow-xs"
             >
               <Share2 className="w-4 h-4" />
               <span>SHARE</span>
@@ -297,7 +297,7 @@ export function PosSuccessModal({
             <button
               type="button"
               onClick={handleWhatsAppShare}
-              className="py-3 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              className="py-3 px-3.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
             >
               <MessageCircle className="w-4 h-4" />
               <span>WHATSAPP</span>
@@ -309,19 +309,19 @@ export function PosSuccessModal({
             type="button"
             onClick={handleDownloadPdf}
             disabled={isGenerating}
-            className="w-full py-2.5 px-4 rounded-xl border border-border bg-secondary/50 hover:bg-secondary text-foreground font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-2xl border border-border bg-card hover:bg-secondary text-foreground font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
           >
             <Download className="w-4 h-4 text-muted-foreground" />
-            <span>{isGenerating ? 'GENERATING PDF...' : 'DOWNLOAD PDF'}</span>
+            <span>{isGenerating ? 'Generating PDF...' : 'Download PDF'}</span>
           </button>
         </div>
 
-        {/* Secondary Navigation: View Bill & New Bill */}
+        {/* Secondary Navigation */}
         <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-border/60">
           <button
             type="button"
             onClick={() => onViewBill(billData.bill_id)}
-            className="py-2.5 px-3 rounded-xl border border-border bg-card hover:bg-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="py-2.5 px-3 rounded-2xl border border-border bg-card hover:bg-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
             <span>View Bill</span>
@@ -330,7 +330,7 @@ export function PosSuccessModal({
           <button
             type="button"
             onClick={onNewBill}
-            className="py-2.5 px-3 rounded-xl border border-border bg-card hover:bg-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="py-2.5 px-3 rounded-2xl border border-border bg-card hover:bg-secondary font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5 text-muted-foreground" />
             <span>New Bill</span>
