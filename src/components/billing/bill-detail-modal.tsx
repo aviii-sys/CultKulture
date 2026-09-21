@@ -10,8 +10,18 @@ import {
   Eye,
   EyeOff,
   Receipt,
+  Download,
+  Share2,
+  MessageCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { BillDetailData, getBillDetailAction } from '@/lib/actions/billing-actions';
+import { getOrGenerateBillPdfAction } from '@/lib/actions/pdf-actions';
+import {
+  formatWhatsAppBillMessage,
+  getWhatsAppUrl,
+  shareBillPdf,
+} from '@/lib/utils/share';
 import { formatISTDate, formatISTTime } from '@/lib/utils/dates';
 import { formatIndianRupees } from '@/lib/utils/currency';
 import { RupeeDisplay } from '@/components/common/rupee-display';
@@ -36,6 +46,11 @@ export function BillDetailModal({
   const [showInternalProfit, setShowInternalProfit] = useState(false);
   const [isVoidModalOpen, setIsVoidModalOpen] = useState(false);
 
+  // PDF & Sharing State
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfNotice, setPdfNotice] = useState<string | null>(null);
+
   useEffect(() => {
     let ignore = false;
 
@@ -44,6 +59,10 @@ export function BillDetailModal({
     }
 
     async function loadBill() {
+      setLoading(true);
+      setErrorMsg(null);
+      setPdfError(null);
+      setPdfNotice(null);
       try {
         const res = await getBillDetailAction(billId!);
         if (ignore) return;
@@ -84,6 +103,132 @@ export function BillDetailModal({
     }
     if (onBillVoided) {
       onBillVoided(id);
+    }
+  };
+
+  // 1. Download PDF Action
+  const handleDownloadPdf = async () => {
+    if (!bill) return;
+    setIsPdfLoading(true);
+    setPdfError(null);
+    setPdfNotice(null);
+
+    try {
+      const res = await getOrGenerateBillPdfAction(bill.id);
+      if (res.error || !res.signedUrl) {
+        setPdfError(res.error || 'Failed to generate PDF');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = res.signedUrl;
+      link.download = res.fileName || `${bill.bill_number}.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setPdfNotice('Downloading bill PDF...');
+    } catch (err: unknown) {
+      setPdfError(err instanceof Error ? err.message : 'Failed to download PDF');
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
+  // 2. WhatsApp Share Action
+  const handleWhatsAppShare = async () => {
+    if (!bill) return;
+    setIsPdfLoading(true);
+    setPdfError(null);
+    setPdfNotice(null);
+
+    try {
+      const res = await getOrGenerateBillPdfAction(bill.id);
+      setIsPdfLoading(false);
+
+      const message = formatWhatsAppBillMessage(
+        {
+          bill_number: bill.bill_number,
+          customer_name: bill.customer_name,
+          total: bill.total,
+          payment_mode: bill.payment_mode,
+        },
+        'Cult Kulture'
+      );
+
+      const waUrl = getWhatsAppUrl(bill.phone, message);
+
+      if (res.signedUrl) {
+        // Trigger download for user to attach if desired
+        const link = document.createElement('a');
+        link.href = res.signedUrl;
+        link.download = res.fileName || `${bill.bill_number}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      window.open(waUrl, '_blank');
+      setPdfNotice(
+        bill.phone
+          ? 'Opened WhatsApp. If sending the bill PDF, please attach the downloaded file.'
+          : 'Opened WhatsApp. Please select a contact and attach the bill PDF.'
+      );
+    } catch (err: unknown) {
+      setIsPdfLoading(false);
+      setPdfError(err instanceof Error ? err.message : 'Failed to open WhatsApp');
+    }
+  };
+
+  // 3. Web Share Action
+  const handleNativeShare = async () => {
+    if (!bill) return;
+    setIsPdfLoading(true);
+    setPdfError(null);
+    setPdfNotice(null);
+
+    try {
+      const res = await getOrGenerateBillPdfAction(bill.id);
+      if (res.error || !res.signedUrl) {
+        setPdfError(res.error || 'Failed to generate PDF for sharing');
+        return;
+      }
+
+      const message = formatWhatsAppBillMessage(
+        {
+          bill_number: bill.bill_number,
+          customer_name: bill.customer_name,
+          total: bill.total,
+          payment_mode: bill.payment_mode,
+        },
+        'Cult Kulture'
+      );
+
+      const shareRes = await shareBillPdf({
+        signedUrl: res.signedUrl,
+        fileName: res.fileName || `${bill.bill_number}.pdf`,
+        title: `Bill ${bill.bill_number} - Cult Kulture`,
+        text: message,
+      });
+
+      if (shareRes.success) {
+        setPdfNotice(shareRes.fileShared ? 'Shared bill PDF successfully!' : 'Shared bill link.');
+      } else if (shareRes.error) {
+        // Fallback to downloading
+        const link = document.createElement('a');
+        link.href = res.signedUrl;
+        link.download = res.fileName || `${bill.bill_number}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setPdfNotice('Downloaded PDF (Web Share not supported on this device).');
+      }
+    } catch (err: unknown) {
+      setPdfError(err instanceof Error ? err.message : 'Failed to share');
+    } finally {
+      setIsPdfLoading(false);
     }
   };
 
@@ -132,11 +277,54 @@ export function BillDetailModal({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
+
+          {/* Quick Action Toolbar (Download PDF, Share, WhatsApp) */}
+          {bill && !loading && (
+            <div className="px-4 py-2.5 sm:px-6 bg-secondary/10 border-b border-border flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={isPdfLoading}
+                  className="py-1.5 px-3 rounded-lg border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>{isPdfLoading ? 'Generating...' : 'Download PDF'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  disabled={isPdfLoading}
+                  className="py-1.5 px-3 rounded-lg border border-border bg-card hover:bg-secondary text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>Share</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleWhatsAppShare}
+                  disabled={isPdfLoading}
+                  className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+
+              {isVoided && (
+                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                  PDF will be marked VOIDED
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
@@ -151,6 +339,29 @@ export function BillDetailModal({
               <div className="p-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {pdfError && (
+              <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{pdfError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  className="font-bold underline hover:opacity-80 flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Retry</span>
+                </button>
+              </div>
+            )}
+
+            {pdfNotice && (
+              <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 text-xs border border-sky-200 dark:border-sky-900/50">
+                {pdfNotice}
               </div>
             )}
 
@@ -295,7 +506,7 @@ export function BillDetailModal({
                     <button
                       type="button"
                       onClick={() => setShowInternalProfit(!showInternalProfit)}
-                      className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 font-medium transition-colors"
+                      className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 font-medium transition-colors cursor-pointer"
                     >
                       {showInternalProfit ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       <span>{showInternalProfit ? 'Hide' : 'Reveal'}</span>
@@ -325,7 +536,7 @@ export function BillDetailModal({
             )}
           </div>
 
-          {/* Footer with Void Option */}
+          {/* Footer with Void Option & Close */}
           <div className="p-4 border-t border-border bg-secondary/20 flex items-center justify-between gap-3">
             <div>
               {bill && !isVoided && (
@@ -348,7 +559,7 @@ export function BillDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-bold hover:bg-secondary transition-colors"
+              className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-bold hover:bg-secondary transition-colors cursor-pointer"
             >
               Close
             </button>

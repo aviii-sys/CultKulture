@@ -38,6 +38,7 @@ export function PosScreen({ initialProducts }: PosScreenProps) {
     bill_number: string;
     total: number;
     customer_name?: string;
+    phone?: string | null;
     payment_mode?: string;
   } | null>(null);
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
@@ -247,6 +248,7 @@ export function PosScreen({ initialProducts }: PosScreenProps) {
           bill_number: result.data.bill_number,
           total: result.data.total,
           customer_name: customerName.trim() || 'Walk-in Customer',
+          phone: customerPhone.trim() || null,
           payment_mode: paymentMode,
         });
         setIsSuccessOpen(true);

@@ -45,6 +45,8 @@ export interface DashboardSummaryData {
   today_sales: number;
   today_cost: number;
   today_profit: number;
+  today_bills_count: number;
+  today_items_sold: number;
   profit_by_day: Array<{
     date: string;
     revenue: number;
