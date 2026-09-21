@@ -1,134 +1,3 @@
-# Requirements & System Architecture: Clothing Store Manager (Inventory, Billing & Profit Dashboard)
-
-A private, mobile-first inventory, point-of-sale (POS) billing, and live profit dashboard tailored for a single clothing-store owner in India. Built with Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, and Supabase (PostgreSQL, Auth, Realtime, Storage).
-
----
-
-## 1. System Architecture & Folder Structure
-
-The application follows the Next.js App Router pattern, isolating the authenticated dashboard routes behind middleware/proxy and layout guards. It uses server actions and API route handlers for secure operations (calling Supabase RPCs and generating signed URLs), with `@supabase/ssr` handling secure, httpOnly session cookies.
-
-> **Note on Next.js Version**: If Next.js 16+ is scaffolded, `src/proxy.ts` is used instead of `src/middleware.ts`.
-
-```
-clothing-store-manager/
-├── .env.example
-├── .env.local                          # Environment variables (SUPABASE_SERVICE_ROLE_KEY never exposed to client)
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts                  # Tailwind theme, custom colors, animations
-├── components.json                     # shadcn/ui configuration
-├── supabase/
-│   ├── migrations/
-│   │   └── 20260921000000_initial_schema.sql  # Full schema, RLS, functions, indexes
-│   └── seed.sql                        # Initial shop_settings, sequence setup & app_owner placeholder
-├── src/
-│   ├── middleware.ts (or proxy.ts)     # Route guard + session refresh + single-user email validation
-│   ├── app/
-│   │   ├── layout.tsx                  # Root HTML, Inter font, ThemeProvider, Toaster
-│   │   ├── globals.css                 # CSS variables, HSL color tokens, dark mode styles
-│   │   ├── (auth)/
-│   │   │   └── login/
-│   │   │       └── page.tsx            # Clean, mobile-first single-user login screen
-│   │   ├── (dashboard)/
-│   │   │   ├── layout.tsx              # Authenticated shell (mobile bottom nav, desktop sidebar, top header)
-│   │   │   ├── page.tsx                # Live Dashboard (Today & Month's Profit, COGS, Realtime Feed)
-│   │   │   ├── inventory/
-│   │   │   │   ├── page.tsx            # Inventory list, low-stock badges, search & filters
-│   │   │   │   ├── add/
-│   │   │   │   │   └── page.tsx        # Add/Restock multi-variant matrix (colour/size/cost/selling)
-│   │   │   │   └── [id]/
-│   │   │   │       └── page.tsx        # Product detail, variant edit, stock addition history
-│   │   │   ├── billing/
-│   │   │   │   ├── page.tsx            # High-speed POS counter (search, cart, discount, instant stock check)
-│   │   │   │   ├── history/
-│   │   │   │   │   └── page.tsx        # Bills list (search by bill no, customer, phone, date)
-│   │   │   │   └── [id]/
-│   │   │   │       └── page.tsx        # Bill detail view, void button, PDF preview, WhatsApp buttons
-│   │   │   ├── settings/
-│   │   │   │   └── page.tsx            # Shop profile (name, address, phone, logo, footer)
-│   │   │   └── reports/
-│   │   │       └── page.tsx            # Monthly analytics, CSV exports (bills/inventory), backup status
-│   │   └── api/
-│   │       ├── auth/
-│   │       │   └── signout/
-│   │       │       └── route.ts        # Secure session termination
-│   │       ├── bills/
-│   │       │   ├── route.ts            # Invoke atomic create_bill RPC
-│   │       │   └── [id]/
-│   │       │       ├── pdf/
-│   │       │       │   └── route.ts        # Generate & upload PDF / return 15-min signed URL
-│   │       │       └── void/
-│   │       │           └── route.ts        # Invoke atomic void_bill RPC
-│   │       └── export/
-│   │           ├── bills-csv/
-│   │           │   └── route.ts        # Streaming CSV export for bills
-│   │           └── inventory-csv/
-│   │               └── route.ts        # Streaming CSV export for inventory
-│   ├── components/
-│   │   ├── ui/                         # shadcn/ui components (button, dialog, input, table, badge, sheet, etc.)
-│   │   ├── common/
-│   │   │   ├── app-header.tsx          # Top bar with shop name, date, connection indicator
-│   │   │   ├── bottom-nav.tsx          # Mobile navigation bar (Dashboard, POS, Inventory, Bills)
-│   │   │   ├── sidebar.tsx             # Desktop collapsible sidebar
-│   │   │   ├── rupee-display.tsx       # Indian currency formatter component (₹1,25,000)
-│   │   │   └── empty-state.tsx
-│   │   ├── dashboard/
-│   │   │   ├── profit-hero-card.tsx    # "This Month's Profit" highlighted card
-│   │   │   ├── metrics-grid.tsx        # Revenue, COGS, Bills count, Items sold, Today's metrics
-│   │   │   ├── profit-chart.tsx        # Recharts daily profit trend (IST month)
-│   │   │   ├── top-sellers-widget.tsx  # Top selling items widget
-│   │   │   ├── recent-bills-feed.tsx   # Realtime live feed of counter transactions
-│   │   │   └── low-stock-alert.tsx     # Warning badge list for variants <= threshold
-│   │   ├── inventory/
-│   │   │   ├── variant-matrix-form.tsx # Dynamic rows for colours/sizes/cost/selling
-│   │   │   ├── product-table.tsx       # Expandable table with search and filters
-│   │   │   └── stock-history-modal.tsx # Historical stock entries log
-│   │   ├── billing/
-│   │   │   ├── pos-cart.tsx            # Sticky cart drawer with discount & price editing
-│   │   │   ├── product-picker.tsx      # Quick product search with stock pill badges
-│   │   │   ├── customer-form.tsx       # Customer name (default Walk-in), +91 phone, payment mode
-│   │   │   └── whatsapp-actions.tsx    # "Share PDF" (Web Share API) & "Message customer" (wa.me)
-│   │   └── pdf/
-│   │       └── bill-receipt-doc.tsx    # Clean receipt document template
-│   ├── lib/
-│   │   ├── actions/
-│   │   │   └── auth-actions.ts         # Server action for login with DB rate-limiting
-│   │   ├── supabase/
-│   │   │   ├── client.ts               # Browser Supabase client (createBrowserClient)
-│   │   │   ├── server.ts               # Server Supabase client with cookie handlers
-│   │   │   └── admin.ts                # Server-only service-role client (for migrations/storage/auth checks)
-│   │   ├── utils/
-│   │   │   ├── currency.ts             # formatIndianRupees (Intl.NumberFormat with en-IN)
-│   │   │   ├── dates.ts                # IST timezone utilities (formatISTDate, getISTMonthBounds)
-│   │   │   ├── phone.ts                # Indian phone number normalizer (+91 format validation)
-│   │   │   └── pdf.ts                  # Server-side PDF renderer utility
-│   │   ├── validations/
-│   │   │   ├── bill.ts                 # Zod validation schema for bill creation
-│   │   │   ├── product.ts              # Zod validation schema for product & variants
-│   │   │   └── stock.ts                # Zod validation schema for stock entries
-│   │   └── rate-limiter.ts             # Database-backed login rate limiter (login_attempts table)
-│   ├── hooks/
-│   │   ├── use-realtime-dashboard.ts   # Supabase Realtime channel listener triggering dashboard_summary refetch
-│   │   ├── use-cart.ts                 # Zustand POS cart store (items, discounts, customer info)
-│   │   └── use-keyboard-shortcuts.ts   # Keyboard navigation for fast POS checkout
-│   └── types/
-│       ├── database.types.ts           # Auto-generated Supabase database types
-│       └── index.ts                    # UI & domain type definitions
-```
-
----
-
-## 2. Full Supabase Database Schema (SQL)
-
-### Key Design Rules:
-1. **Timestamps**: All `timestamptz` columns store standard `DEFAULT now()`. IST conversion is strictly performed on query via `(created_at AT TIME ZONE 'Asia/Kolkata')`. Date defaults use `(now() AT TIME ZONE 'Asia/Kolkata')::date`.
-2. **Amounts**: Stored as non-negative integers in whole Rupees (₹).
-3. **Discount**: Bill-level discount `bills.discount >= 0`. `bills.subtotal` holds the gross line sum, `bills.total = subtotal - discount`, and `bills.profit = total - total_cost`.
-4. **Customer Default**: Default to `'Walk-in Customer'` if blank.
-5. **Function Security**: All `SECURITY DEFINER` functions specify `SET search_path = public`, with `REVOKE EXECUTE ... FROM PUBLIC, anon` and `GRANT ... TO authenticated`.
-
-```sql
 -- ==============================================================================
 -- 1. EXTENSIONS & SETUP
 -- ==============================================================================
@@ -145,11 +14,11 @@ CREATE TABLE IF NOT EXISTS public.app_owner (
 COMMENT ON TABLE public.app_owner IS 'Anchors the single authorized owner account. RLS policies verify against this table.';
 
 -- ==============================================================================
--- 3. SHOP SETTINGS (Single-Row Configuration)
+-- 3. SHOP SETTINGS (Single-Row Configuration - NO GST)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.shop_settings (
     id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    shop_name TEXT NOT NULL DEFAULT 'My Clothing Store',
+    shop_name TEXT NOT NULL DEFAULT 'Cult Kulture',
     address TEXT,
     phone TEXT,
     logo_url TEXT,
@@ -159,11 +28,11 @@ CREATE TABLE IF NOT EXISTS public.shop_settings (
 );
 
 INSERT INTO public.shop_settings (id, shop_name)
-VALUES (1, 'My Clothing Store')
+VALUES (1, 'Cult Kulture')
 ON CONFLICT (id) DO NOTHING;
 
 -- ==============================================================================
--- 4. LOGIN ATTEMPTS (DB-Backed Rate Limiting)
+-- 4. LOGIN ATTEMPTS (DB-Backed Rate Limiting: 5 attempts per 15 mins per IP)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.login_attempts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -220,7 +89,7 @@ CREATE TABLE IF NOT EXISTS public.stock_entries (
 CREATE INDEX IF NOT EXISTS idx_stock_entries_variant_id ON public.stock_entries(variant_id);
 
 -- ==============================================================================
--- 7. BILL SEQUENCES (Concurrency-Safe Sequential INV-YYYY-0001)
+-- 7. BILL SEQUENCES (Consecutive Concurrency-Safe INV-YYYY-0001)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.bill_sequences (
     year INTEGER PRIMARY KEY,
@@ -237,7 +106,9 @@ CREATE TABLE IF NOT EXISTS public.bills (
     phone TEXT,
     payment_mode TEXT NOT NULL CHECK (payment_mode IN ('Cash', 'UPI', 'Card', 'Split')),
     subtotal INTEGER NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
-    discount INTEGER NOT NULL DEFAULT 0 CHECK (discount >= 0),
+    total_item_discount INTEGER NOT NULL DEFAULT 0 CHECK (total_item_discount >= 0),
+    bill_discount INTEGER NOT NULL DEFAULT 0 CHECK (bill_discount >= 0),
+    total_discount INTEGER NOT NULL DEFAULT 0 CHECK (total_discount >= 0),
     total INTEGER NOT NULL CHECK (total >= 0),
     total_cost INTEGER NOT NULL CHECK (total_cost >= 0),
     profit INTEGER NOT NULL,
@@ -261,6 +132,9 @@ CREATE TABLE IF NOT EXISTS public.bill_items (
     size TEXT NOT NULL,
     qty INTEGER NOT NULL CHECK (qty > 0),
     unit_selling_price INTEGER NOT NULL CHECK (unit_selling_price >= 0),
+    line_gross INTEGER NOT NULL CHECK (line_gross >= 0),
+    line_discount INTEGER NOT NULL DEFAULT 0 CHECK (line_discount >= 0),
+    allocated_bill_discount INTEGER NOT NULL DEFAULT 0 CHECK (allocated_bill_discount >= 0),
     unit_cost_price INTEGER NOT NULL CHECK (unit_cost_price >= 0),
     line_total INTEGER NOT NULL CHECK (line_total >= 0),
     line_cost INTEGER NOT NULL CHECK (line_cost >= 0),
@@ -325,20 +199,11 @@ CREATE POLICY "Owner full access on bills" ON public.bills FOR ALL TO authentica
 CREATE POLICY "Owner full access on bill_items" ON public.bill_items FOR ALL TO authenticated USING (public.is_owner()) WITH CHECK (public.is_owner());
 CREATE POLICY "Owner full access on bill_sequences" ON public.bill_sequences FOR ALL TO authenticated USING (public.is_owner()) WITH CHECK (public.is_owner());
 CREATE POLICY "Owner read access on app_owner" ON public.app_owner FOR SELECT TO authenticated USING (id = auth.uid());
--- Login attempts managed via service role in server actions or authenticated owner
 CREATE POLICY "Owner full access on login_attempts" ON public.login_attempts FOR ALL TO authenticated USING (public.is_owner()) WITH CHECK (public.is_owner());
-```
 
----
-
-## 3. Atomic PostgreSQL Functions
-
-### A. Atomic Batch Stock Addition (`add_stock_batch`)
-Handles product creation/selection, variant upserting, weighted-average cost computation, selling price updates, and audit logging in **one atomic transaction**:
-
-$$\text{new\_cost} = \frac{(\text{existing\_qty} \times \text{existing\_cost}) + (\text{added\_qty} \times \text{added\_cost})}{\text{existing\_qty} + \text{added\_qty}}$$
-
-```sql
+-- ==============================================================================
+-- 11. ATOMIC FUNCTION: add_stock_batch
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.add_stock_batch(
     p_product JSONB,
     p_variants JSONB
@@ -492,19 +357,15 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.add_stock_batch(JSONB, JSONB) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.add_stock_batch(JSONB, JSONB) TO authenticated;
-```
 
----
-
-### B. Atomic Bill Creation Function (`create_bill`)
-Handles line calculations, discount deductions, cost snapshotting, sequential billing (`INV-YYYY-XXXX`), and stock deductions:
-
-```sql
+-- ==============================================================================
+-- 12. ATOMIC FUNCTION: create_bill (Item & Bill Discounts + Proportional Allocation)
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.create_bill(
     p_customer_name TEXT,
     p_phone TEXT,
     p_payment_mode TEXT,
-    p_discount INTEGER,
+    p_bill_discount INTEGER,
     p_notes TEXT,
     p_items JSONB
 )
@@ -518,17 +379,31 @@ DECLARE
     v_seq_num INTEGER;
     v_bill_number TEXT;
     v_bill_id UUID;
+    v_customer_name TEXT;
+
     v_subtotal INTEGER := 0;
-    v_discount INTEGER := COALESCE(p_discount, 0);
+    v_total_item_discount INTEGER := 0;
+    v_bill_discount INTEGER := COALESCE(p_bill_discount, 0);
+    v_total_discount INTEGER := 0;
     v_total_selling INTEGER := 0;
     v_total_cost INTEGER := 0;
     v_total_profit INTEGER := 0;
-    v_customer_name TEXT;
+
     v_item RECORD;
     v_variant RECORD;
+    v_line_gross INTEGER;
+    v_line_net_before_bill_disc INTEGER;
+    v_net_sum_before_bill_disc INTEGER := 0;
+    v_allocated_bill_disc INTEGER;
+    v_allocated_so_far INTEGER := 0;
+    v_items_count INTEGER;
+    v_item_idx INTEGER := 0;
     v_line_total INTEGER;
     v_line_cost INTEGER;
     v_line_profit INTEGER;
+
+    -- Temporary table to hold validated line items before insertion
+    v_item_list JSONB;
 BEGIN
     -- 1. Security Check
     IF NOT public.is_owner() THEN
@@ -537,18 +412,19 @@ BEGIN
 
     -- 2. Input Validation
     v_customer_name := COALESCE(NULLIF(trim(p_customer_name), ''), 'Walk-in Customer');
-    
-    IF v_discount < 0 THEN
-        RAISE EXCEPTION 'Discount cannot be negative.';
-    END IF;
-    IF jsonb_array_length(p_items) = 0 THEN
+    v_items_count := jsonb_array_length(p_items);
+
+    IF v_items_count = 0 THEN
         RAISE EXCEPTION 'A bill must contain at least one item.';
+    END IF;
+    IF v_bill_discount < 0 THEN
+        RAISE EXCEPTION 'Bill discount cannot be negative.';
     END IF;
     IF p_payment_mode NOT IN ('Cash', 'UPI', 'Card', 'Split') THEN
         RAISE EXCEPTION 'Invalid payment mode: %', p_payment_mode;
     END IF;
 
-    -- 3. Concurrency-Safe Sequential Bill Numbering (INV-YYYY-0001)
+    -- 3. Create Draft Bill Header with Sequential Number
     v_current_year := EXTRACT(YEAR FROM (now() AT TIME ZONE 'Asia/Kolkata'))::INTEGER;
     
     INSERT INTO public.bill_sequences (year, last_number)
@@ -559,50 +435,50 @@ BEGIN
 
     v_bill_number := 'INV-' || v_current_year::TEXT || '-' || LPAD(v_seq_num::TEXT, 4, '0');
 
-    -- 4. Create Draft Bill Header
-    INSERT INTO public.bills (
-        bill_number,
-        customer_name,
-        phone,
-        payment_mode,
-        subtotal,
-        discount,
-        total,
-        total_cost,
-        profit,
-        status,
-        notes,
-        created_at
-    )
-    VALUES (
-        v_bill_number,
-        v_customer_name,
-        trim(p_phone),
-        p_payment_mode,
-        0,
-        v_discount,
-        0,
-        0,
-        0,
-        'active',
-        p_notes,
-        now()
-    )
-    RETURNING id INTO v_bill_id;
+    -- Create temporary table for staging calculation
+    CREATE TEMPORARY TABLE temp_bill_items (
+        idx INT,
+        variant_id UUID,
+        product_name TEXT,
+        colour TEXT,
+        size TEXT,
+        qty INT,
+        unit_selling_price INT,
+        unit_cost_price INT,
+        line_gross INT,
+        line_discount INT,
+        line_net_before_bill_disc INT
+    ) ON COMMIT DROP;
 
-    -- 5. Process Each Item (Lock variants, verify stock, snapshot cost, deduct inventory)
+    -- 4. Pass 1: Validate stock, lock rows, compute line discounts & sum net
     FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(
         variant_id UUID,
         qty INTEGER,
-        unit_selling_price INTEGER
+        unit_selling_price INTEGER,
+        line_discount INTEGER
     )
     LOOP
+        v_item_idx := v_item_idx + 1;
         IF v_item.qty <= 0 THEN
             RAISE EXCEPTION 'Item quantity must be greater than zero.';
         END IF;
         IF v_item.unit_selling_price < 0 THEN
             RAISE EXCEPTION 'Unit selling price cannot be negative.';
         END IF;
+
+        v_line_gross := v_item.qty * v_item.unit_selling_price;
+        v_item.line_discount := COALESCE(v_item.line_discount, 0);
+        IF v_item.line_discount < 0 THEN
+            RAISE EXCEPTION 'Line discount cannot be negative.';
+        END IF;
+        IF v_item.line_discount > v_line_gross THEN
+            RAISE EXCEPTION 'Line discount (₹%) cannot exceed line gross amount (₹%).', v_item.line_discount, v_line_gross;
+        END IF;
+
+        v_line_net_before_bill_disc := v_line_gross - v_item.line_discount;
+        v_subtotal := v_subtotal + v_line_gross;
+        v_total_item_discount := v_total_item_discount + v_item.line_discount;
+        v_net_sum_before_bill_disc := v_net_sum_before_bill_disc + v_line_net_before_bill_disc;
 
         -- Lock variant row for update to prevent overselling
         SELECT v.id, v.quantity, v.cost_price, v.colour, v.size, p.name AS product_name
@@ -621,62 +497,67 @@ BEGIN
                 v_variant.product_name, v_variant.colour, v_variant.size, v_variant.quantity, v_item.qty;
         END IF;
 
-        v_line_total := v_item.qty * v_item.unit_selling_price;
-        v_line_cost := v_item.qty * v_variant.cost_price;
-        v_line_profit := v_line_total - v_line_cost;
-
-        v_subtotal := v_subtotal + v_line_total;
-        v_total_cost := v_total_cost + v_line_cost;
-
-        -- Deduct inventory
+        -- Deduct inventory immediately
         UPDATE public.variants
         SET quantity = quantity - v_item.qty,
             updated_at = now()
         WHERE id = v_item.variant_id;
 
-        -- Insert snapshot record in bill_items
-        INSERT INTO public.bill_items (
-            bill_id,
-            variant_id,
-            product_name,
-            colour,
-            size,
-            qty,
-            unit_selling_price,
-            unit_cost_price,
-            line_total,
-            line_cost,
-            line_profit,
-            created_at
-        )
-        VALUES (
-            v_bill_id,
-            v_item.variant_id,
-            v_variant.product_name,
-            v_variant.colour,
-            v_variant.size,
-            v_item.qty,
-            v_item.unit_selling_price,
-            v_variant.cost_price,
-            v_line_total,
-            v_line_cost,
-            v_line_profit,
-            now()
+        INSERT INTO temp_bill_items (
+            idx, variant_id, product_name, colour, size, qty, unit_selling_price, unit_cost_price, line_gross, line_discount, line_net_before_bill_disc
+        ) VALUES (
+            v_item_idx, v_variant.id, v_variant.product_name, v_variant.colour, v_variant.size, v_item.qty, v_item.unit_selling_price, v_variant.cost_price, v_line_gross, v_item.line_discount, v_line_net_before_bill_disc
         );
     END LOOP;
 
-    -- Validate and apply discount
-    IF v_discount > v_subtotal THEN
-        RAISE EXCEPTION 'Discount (₹%) cannot exceed subtotal (₹%).', v_discount, v_subtotal;
+    -- Validate whole-bill discount
+    IF v_bill_discount > v_net_sum_before_bill_disc THEN
+        RAISE EXCEPTION 'Bill discount (₹%) cannot exceed remaining bill total (₹%).', v_bill_discount, v_net_sum_before_bill_disc;
     END IF;
 
-    v_total_selling := v_subtotal - v_discount;
-    v_total_profit := v_total_selling - v_total_cost;
+    -- 5. Pass 2: Allocate whole-bill discount proportionally and insert bill items
+    INSERT INTO public.bills (
+        bill_number, customer_name, phone, payment_mode, subtotal, total_item_discount, bill_discount, total_discount, total, total_cost, profit, status, notes, created_at
+    ) VALUES (
+        v_bill_number, v_customer_name, trim(p_phone), p_payment_mode, v_subtotal, v_total_item_discount, v_bill_discount, 0, 0, 0, 0, 'active', p_notes, now()
+    ) RETURNING id INTO v_bill_id;
 
-    -- 6. Update Bill Header with Final Aggregates
+    v_item_idx := 0;
+    FOR v_item IN SELECT * FROM temp_bill_items ORDER BY idx ASC LOOP
+        v_item_idx := v_item_idx + 1;
+
+        IF v_bill_discount = 0 OR v_net_sum_before_bill_disc = 0 THEN
+            v_allocated_bill_disc := 0;
+        ELSIF v_item_idx = v_items_count THEN
+            -- Remainder on last item to prevent rounding drift
+            v_allocated_bill_disc := v_bill_discount - v_allocated_so_far;
+        ELSE
+            v_allocated_bill_disc := ROUND(
+                (v_item.line_net_before_bill_disc::NUMERIC / v_net_sum_before_bill_disc::NUMERIC) * v_bill_discount::NUMERIC
+            );
+            v_allocated_so_far := v_allocated_so_far + v_allocated_bill_disc;
+        END IF;
+
+        v_line_total := v_item.line_net_before_bill_disc - v_allocated_bill_disc;
+        v_line_cost := v_item.qty * v_item.unit_cost_price;
+        v_line_profit := v_line_total - v_line_cost;
+
+        v_total_selling := v_total_selling + v_line_total;
+        v_total_cost := v_total_cost + v_line_cost;
+        v_total_profit := v_total_profit + v_line_profit;
+
+        INSERT INTO public.bill_items (
+            bill_id, variant_id, product_name, colour, size, qty, unit_selling_price, line_gross, line_discount, allocated_bill_discount, unit_cost_price, line_total, line_cost, line_profit, created_at
+        ) VALUES (
+            v_bill_id, v_item.variant_id, v_item.product_name, v_item.colour, v_item.size, v_item.qty, v_item.unit_selling_price, v_item.line_gross, v_item.line_discount, v_allocated_bill_disc, v_item.unit_cost_price, v_line_total, v_line_cost, v_line_profit, now()
+        );
+    END LOOP;
+
+    v_total_discount := v_total_item_discount + v_bill_discount;
+
+    -- 6. Update Bill Header
     UPDATE public.bills
-    SET subtotal = v_subtotal,
-        discount = v_discount,
+    SET total_discount = v_total_discount,
         total = v_total_selling,
         total_cost = v_total_cost,
         profit = v_total_profit
@@ -687,7 +568,9 @@ BEGIN
         'bill_id', v_bill_id,
         'bill_number', v_bill_number,
         'subtotal', v_subtotal,
-        'discount', v_discount,
+        'total_item_discount', v_total_item_discount,
+        'bill_discount', v_bill_discount,
+        'total_discount', v_total_discount,
         'total', v_total_selling,
         'total_cost', v_total_cost,
         'profit', v_total_profit
@@ -697,13 +580,10 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.create_bill(TEXT, TEXT, TEXT, INTEGER, TEXT, JSONB) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_bill(TEXT, TEXT, TEXT, INTEGER, TEXT, JSONB) TO authenticated;
-```
 
----
-
-### C. Atomic Bill Void Function (`void_bill`)
-
-```sql
+-- ==============================================================================
+-- 13. ATOMIC FUNCTION: void_bill
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.void_bill(
     p_bill_id UUID,
     p_reason TEXT DEFAULT NULL
@@ -766,14 +646,10 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.void_bill(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.void_bill(UUID, TEXT) TO authenticated;
-```
 
----
-
-### D. Dashboard Summary Function (`dashboard_summary`)
-Calculates monthly and today's metrics, daily profit trends, and top sellers using **IST boundary windows** and excluding voided bills:
-
-```sql
+-- ==============================================================================
+-- 14. ATOMIC FUNCTION: dashboard_summary (IST Month & Today, Voided Excluded)
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.dashboard_summary(
     p_month DATE DEFAULT NULL
 )
@@ -791,6 +667,7 @@ DECLARE
     v_today_end_ist TIMESTAMPTZ;
 
     v_month_revenue BIGINT := 0;
+    v_month_discounts BIGINT := 0;
     v_month_cost BIGINT := 0;
     v_month_profit BIGINT := 0;
     v_month_bills_count BIGINT := 0;
@@ -819,11 +696,13 @@ BEGIN
     -- 1. Month Aggregates (Excluding Voided Bills)
     SELECT
         COALESCE(SUM(b.total), 0),
+        COALESCE(SUM(b.total_discount), 0),
         COALESCE(SUM(b.total_cost), 0),
         COALESCE(SUM(b.profit), 0),
         COUNT(b.id)
     INTO
         v_month_revenue,
+        v_month_discounts,
         v_month_cost,
         v_month_profit,
         v_month_bills_count
@@ -862,6 +741,7 @@ BEGIN
         SELECT jsonb_build_object(
             'date', to_char((b.created_at AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD'),
             'revenue', SUM(b.total),
+            'discounts', SUM(b.total_discount),
             'cost', SUM(b.total_cost),
             'profit', SUM(b.profit),
             'bills_count', COUNT(b.id)
@@ -897,6 +777,7 @@ BEGIN
     RETURN jsonb_build_object(
         'month', to_char(v_target_date, 'YYYY-MM'),
         'month_revenue', v_month_revenue,
+        'month_discounts', v_month_discounts,
         'month_cost', v_month_cost,
         'month_profit', v_month_profit,
         'month_bills_count', v_month_bills_count,
@@ -912,58 +793,18 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.dashboard_summary(DATE) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.dashboard_summary(DATE) TO authenticated;
-```
 
----
+-- ==============================================================================
+-- 15. PRIVATE STORAGE BUCKET: bills-pdf
+-- ==============================================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('bills-pdf', 'bills-pdf', false, 5242880, ARRAY['application/pdf']::text[])
+ON CONFLICT (id) DO NOTHING;
 
-## 4. Single-User Security Architecture
-
-1. **No Public Registration**: Signups are disabled in the Supabase Project Dashboard (`ENABLE_SIGNUP = false`).
-2. **Owner Verification**:
-   - The owner user is created manually via Supabase Auth Dashboard or seed script.
-   - The user UUID and email are anchored in `public.app_owner`.
-   - `is_owner()` validates whether `auth.uid()` exists in `public.app_owner`.
-   - Middleware (or `proxy.ts` on Next.js 16+) validates the user session and confirms matching against `OWNER_EMAIL` / `app_owner`.
-3. **Database-Backed Rate Limiting**:
-   - Authentication attempts are routed through a Next.js Server Action (`auth-actions.ts`).
-   - Checks `login_attempts` table (or Upstash Redis): maximum 5 attempts per 15-minute window per client IP.
-4. **Private Storage & WhatsApp Sharing**:
-   - Bucket `bills-pdf` is private (`public = false`).
-   - "Share PDF": Invokes Web Share API on mobile with the PDF blob, letting the owner choose WhatsApp / WhatsApp Business.
-   - "Message customer": Direct link to `https://wa.me/91XXXXXXXXXX?text=...` with prefilled itemized text bill (no PDF attachment required).
-5. **Secrets Isolation**: `SUPABASE_SERVICE_ROLE_KEY` is strictly confined to server-side code (`src/lib/supabase/admin.ts`).
-
----
-
-## 5. Build Phases & Execution Roadmap
-
-- **Phase 1: Project Setup, Database & Login**
-  - Next.js App Router scaffold (or proxy on Next 16+), Tailwind, shadcn/ui.
-  - Apply migrations: `app_owner`, `shop_settings`, `products`, `variants`, `stock_entries`, `bill_sequences`, `bills`, `bill_items`, `login_attempts`.
-  - Deploy atomic functions: `is_owner`, `add_stock_batch`, `create_bill`, `void_bill`, `dashboard_summary` with `search_path = public` and explicit grant/revoke permissions.
-  - Configure Supabase Auth, login screen, server action with DB-backed rate limiter, and route middleware/proxy.
-
-- **Phase 2: Inventory Module**
-  - Products list with category, colour, size filters and low-stock threshold badges.
-  - Multi-variant stock addition screen using `add_stock_batch` with weighted-average cost calculation.
-  - Edit, archive (soft delete), and stock audit log modal.
-
-- **Phase 3: Billing (POS) Module**
-  - Fast counter screen: variant picker, stock counter, line price adjustments, bill-level discount.
-  - Customer name (defaults to "Walk-in Customer"), +91 phone normalizer, payment modes.
-  - Atomic checkout via `create_bill` RPC.
-  - Bills history, receipt detail, and atomic `void_bill` action.
-
-- **Phase 4: Live Dashboard**
-  - "This Month's Profit" hero card and key KPI grid.
-  - Daily profit trend chart and top sellers widget.
-  - Supabase Realtime channel on `bills` and `variants` triggering instant refetch of `dashboard_summary`.
-
-- **Phase 5: PDF Receipt & WhatsApp Sharing**
-  - Professional PDF receipt generator.
-  - Two buttons on bill screen: "Share PDF" (Web Share API) and "Message customer" (`wa.me` prefilled text).
-  - Settings page for shop profile and bill footer.
-
-- **Phase 6: Quality, CSV Export & Production Deployment**
-  - CSV export for bills and inventory.
-  - Error boundaries, mobile layout polish, and deployment guide.
+-- Storage RLS: Owner only
+CREATE POLICY "Owner access to bills-pdf bucket"
+ON storage.objects
+FOR ALL
+TO authenticated
+USING (bucket_id = 'bills-pdf' AND public.is_owner())
+WITH CHECK (bucket_id = 'bills-pdf' AND public.is_owner());
