@@ -52,26 +52,62 @@ export async function getDashboardDataAction(
       : currentMonthStr;
     const isCurrentMonth = activeMonth === currentMonthStr;
 
-    // 1. Invoke PostgreSQL dashboard_summary() RPC
+    // 1. Prepare parameters
     const targetMonthDate = `${activeMonth}-01`;
-    const { data: summaryRpcData, error: summaryError } = await supabase.rpc(
-      'dashboard_summary',
-      { p_month: targetMonthDate }
-    );
+    const { startISO: todayStart, endISO: todayEnd } = getISTStartAndEndOfToday();
+
+    // 2. Dispatch all 4 Supabase queries concurrently in parallel via Promise.all
+    const [
+      { data: summaryRpcData, error: summaryError },
+      { data: todayBillsData },
+      { data: recentBillsData },
+      { data: variantsData },
+    ] = await Promise.all([
+      // Query 1: PostgreSQL dashboard_summary() RPC
+      supabase.rpc('dashboard_summary', { p_month: targetMonthDate }),
+
+      // Query 2: Today's active bills with item quantities
+      supabase
+        .from('bills')
+        .select('id, total, profit, bill_items(qty)')
+        .eq('status', 'active')
+        .gte('created_at', todayStart)
+        .lt('created_at', todayEnd),
+
+      // Query 3: Recent 8 bills for feed
+      supabase
+        .from('bills')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(8),
+
+      // Query 4: Inventory low-stock / out-of-stock variants
+      supabase
+        .from('variants')
+        .select(`
+          id,
+          colour,
+          size,
+          quantity,
+          low_stock_threshold,
+          archived,
+          products (
+            id,
+            name,
+            category,
+            brand,
+            archived
+          )
+        `)
+        .eq('archived', false)
+        .order('quantity', { ascending: true })
+        .limit(50),
+    ]);
 
     if (summaryError) {
       console.error('dashboard_summary RPC error:', summaryError);
       return { error: 'Unable to load dashboard data. Please try again.' };
     }
-
-    // 2. Fetch today's count of bills and items sold in Asia/Kolkata
-    const { startISO: todayStart, endISO: todayEnd } = getISTStartAndEndOfToday();
-    const { data: todayBillsData } = await supabase
-      .from('bills')
-      .select('id, total, profit, bill_items(qty)')
-      .eq('status', 'active')
-      .gte('created_at', todayStart)
-      .lt('created_at', todayEnd);
 
     const todayBillsCount = todayBillsData?.length || 0;
     const todayItemsSold = (todayBillsData || []).reduce(
@@ -116,35 +152,6 @@ export async function getDashboardDataAction(
           }))
         : [],
     };
-
-    // 3. Fetch recent 8 bills
-    const { data: recentBillsData } = await supabase
-      .from('bills')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(8);
-
-    // 4. Fetch current inventory low-stock / out-of-stock warnings
-    const { data: variantsData } = await supabase
-      .from('variants')
-      .select(`
-        id,
-        colour,
-        size,
-        quantity,
-        low_stock_threshold,
-        archived,
-        products (
-          id,
-          name,
-          category,
-          brand,
-          archived
-        )
-      `)
-      .eq('archived', false)
-      .order('quantity', { ascending: true })
-      .limit(50);
 
     const lowStockVariants: LowStockVariantItem[] = [];
     (variantsData || []).forEach((v: any) => {
