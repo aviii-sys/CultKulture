@@ -56,10 +56,18 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = pathname === '/login';
-  const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase().trim();
+  const authorizedEmails = (
+    process.env.AUTHORIZED_EMAILS ||
+    process.env.OWNER_EMAIL ||
+    'avinavnegi7@gmail.com,rhythamsaini99@gmail.com'
+  )
+    .toLowerCase()
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
 
-  // Validate owner identity
-  const isValidOwner = user && (!ownerEmail || user.email?.toLowerCase().trim() === ownerEmail);
+  const userEmail = user?.email?.toLowerCase().trim();
+  const isValidOwner = Boolean(user && userEmail && authorizedEmails.includes(userEmail));
 
   if (!isValidOwner) {
     // If not authenticated and not on /login, redirect to /login

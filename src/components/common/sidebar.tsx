@@ -46,7 +46,11 @@ const navigationItems = [
   },
 ];
 
-export function DesktopSidebar() {
+interface DesktopSidebarProps {
+  userEmail?: string;
+}
+
+export function DesktopSidebar({ userEmail }: DesktopSidebarProps = {}) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
@@ -109,11 +113,14 @@ export function DesktopSidebar() {
       <div className="mt-auto pt-6 border-t border-border/60 space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex flex-col">
-            <span className="text-[11px] font-bold text-foreground tracking-tight">
-              Store Owner
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              Signed in as
             </span>
-            <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-              avinavnegi7@gmail.com
+            <span
+              className="text-[11px] font-semibold text-foreground truncate max-w-[130px]"
+              title={userEmail || 'avinavnegi7@gmail.com'}
+            >
+              {userEmail || 'avinavnegi7@gmail.com'}
             </span>
           </div>
 

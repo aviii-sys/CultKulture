@@ -51,9 +51,18 @@ export async function loginAction(
 
   const { email, password } = parsed.data;
 
-  // 4. Strict owner check: only the configured owner email is permitted
-  const configuredOwnerEmail = process.env.OWNER_EMAIL?.toLowerCase().trim();
-  if (configuredOwnerEmail && email.toLowerCase() !== configuredOwnerEmail) {
+  // 4. Strict owner check: only authorized store manager emails are permitted
+  const authorizedEmails = (
+    process.env.AUTHORIZED_EMAILS ||
+    process.env.OWNER_EMAIL ||
+    'avinavnegi7@gmail.com,rhythamsaini99@gmail.com'
+  )
+    .toLowerCase()
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (!authorizedEmails.includes(email.toLowerCase().trim())) {
     // Return generic error to prevent email enumeration
     return {
       error: 'Invalid email or password.',

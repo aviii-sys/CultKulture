@@ -10,17 +10,25 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   let shopName = 'Cult Kulture';
+  let userEmail: string | undefined;
 
   try {
     const supabase = await createClient();
-    const { data } = (await supabase
-      .from('shop_settings')
-      .select('shop_name')
-      .eq('id', 1)
-      .maybeSingle()) as { data: { shop_name: string } | null };
+    const [settingsRes, userRes] = await Promise.all([
+      supabase
+        .from('shop_settings')
+        .select('shop_name')
+        .eq('id', 1)
+        .maybeSingle(),
+      supabase.auth.getUser(),
+    ]);
 
-    if (data?.shop_name) {
-      shopName = data.shop_name;
+    const settingsData = settingsRes.data as { shop_name?: string } | null;
+    if (settingsData?.shop_name) {
+      shopName = settingsData.shop_name;
+    }
+    if (userRes.data?.user?.email) {
+      userEmail = userRes.data.user.email;
     }
   } catch {
     // Fallback default
@@ -30,7 +38,7 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <AppHeader shopName={shopName} />
       <div className="flex flex-1">
-        <DesktopSidebar />
+        <DesktopSidebar userEmail={userEmail} />
         <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 pb-24 md:pb-8">
           {children}
         </main>

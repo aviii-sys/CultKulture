@@ -3,6 +3,19 @@ import { formatIndianRupees } from '@/lib/utils/currency';
 import { getRawIndianPhoneDigits } from '@/lib/utils/phone';
 
 /**
+ * Shop contact & bill-sender WhatsApp number (+91 81928 47496).
+ * Note: A standard wa.me link opens WhatsApp on the user's active device;
+ * it does not programmatically hijack third-party senders.
+ */
+export const SHOP_WHATSAPP_NUMBER =
+  process.env.NEXT_PUBLIC_SHOP_WHATSAPP_NUMBER ||
+  process.env.SHOP_WHATSAPP_NUMBER ||
+  '+91 81928 47496';
+
+export const NORMALIZED_SHOP_WHATSAPP_NUMBER =
+  getRawIndianPhoneDigits(SHOP_WHATSAPP_NUMBER) ? `91${getRawIndianPhoneDigits(SHOP_WHATSAPP_NUMBER)}` : '918192847496';
+
+/**
  * Generates customer-facing WhatsApp message text.
  * Strictly plain retail cash memo, without internal cost or profit.
  */
