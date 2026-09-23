@@ -373,7 +373,7 @@ export async function generateBillPdfBuffer({
       color: darkColor,
     });
 
-    page.drawText(item.colour, {
+    page.drawText(item.colour || '—', {
       x: colX.colour,
       y: textY,
       size: 8.5,
@@ -381,7 +381,7 @@ export async function generateBillPdfBuffer({
       color: mutedColor,
     });
 
-    page.drawText(item.size, {
+    page.drawText(item.size || '—', {
       x: colX.size,
       y: textY,
       size: 8.5,

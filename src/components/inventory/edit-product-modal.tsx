@@ -32,18 +32,13 @@ export function EditProductModal({
       setError('Product name cannot be empty');
       return;
     }
-    if (!category.trim()) {
-      setError('Category cannot be empty');
-      return;
-    }
-
     setIsSaving(true);
     setError(null);
 
     const res = await updateProductAction({
       id: product.id,
       name: name.trim(),
-      category: category.trim(),
+      category: category.trim() || null,
       brand: brand.trim() || null,
       archived: isArchived,
     });
@@ -124,14 +119,13 @@ export function EditProductModal({
 
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-              Category *
+              Category (Optional)
             </label>
             <input
               type="text"
-              required
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Jackets, Shirts, Jeans"
+              placeholder="e.g. Jackets, Shirts, Jeans (optional)"
               className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>

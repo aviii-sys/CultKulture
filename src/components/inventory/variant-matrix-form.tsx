@@ -128,8 +128,8 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
 
   // Pick existing variant to prefill
   const handlePickExistingVariant = (variant: Variant, rowIndex: number = 0) => {
-    updateRow(rowIndex, 'colour', variant.colour);
-    updateRow(rowIndex, 'size', variant.size);
+    updateRow(rowIndex, 'colour', variant.colour ?? '');
+    updateRow(rowIndex, 'size', variant.size ?? '');
     updateRow(rowIndex, 'cost_price', String(variant.cost_price));
     updateRow(rowIndex, 'selling_price', String(variant.selling_price));
     updateRow(rowIndex, 'low_stock_threshold', String(variant.low_stock_threshold ?? 2));
@@ -141,10 +141,6 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
     if (isNewProduct) {
       if (!productName.trim()) {
         setErrorMessage('Product name is required.');
-        return;
-      }
-      if (!category.trim()) {
-        setErrorMessage('Category is required.');
         return;
       }
     } else {
@@ -163,34 +159,32 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
 
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      if (!r.colour.trim()) {
-        setErrorMessage(`Row ${i + 1}: Colour is required.`);
-        return;
-      }
-      if (!r.size.trim()) {
-        setErrorMessage(`Row ${i + 1}: Size is required.`);
-        return;
-      }
       const qtyNum = Number(r.qty);
       if (isNaN(qtyNum) || qtyNum <= 0) {
-        setErrorMessage(`Row ${i + 1} (${r.colour}/${r.size}): Quantity must be greater than 0.`);
+        const desc = [r.colour, r.size].filter(Boolean).join(' / ') || 'Row ' + (i + 1);
+        setErrorMessage(`Row ${i + 1} (${desc}): Quantity must be greater than 0.`);
         return;
       }
       const costNum = Number(r.cost_price);
       if (isNaN(costNum) || costNum < 0) {
-        setErrorMessage(`Row ${i + 1} (${r.colour}/${r.size}): Cost price cannot be negative.`);
+        const desc = [r.colour, r.size].filter(Boolean).join(' / ') || 'Row ' + (i + 1);
+        setErrorMessage(`Row ${i + 1} (${desc}): Cost price cannot be negative.`);
         return;
       }
       const sellingNum = Number(r.selling_price);
       if (isNaN(sellingNum) || sellingNum < 0) {
-        setErrorMessage(`Row ${i + 1} (${r.colour}/${r.size}): Selling price cannot be negative.`);
+        const desc = [r.colour, r.size].filter(Boolean).join(' / ') || 'Row ' + (i + 1);
+        setErrorMessage(`Row ${i + 1} (${desc}): Selling price cannot be negative.`);
         return;
       }
 
-      const key = `${r.colour.toLowerCase().trim()}:::${r.size.toLowerCase().trim()}`;
+      const colKey = (r.colour || '').toLowerCase().trim();
+      const sizeKey = (r.size || '').toLowerCase().trim();
+      const key = `${colKey}:::${sizeKey}`;
       if (duplicatesCheck.has(key)) {
+        const desc = [r.colour, r.size].filter(Boolean).join(' / ') || 'Standard variant';
         setErrorMessage(
-          `Duplicate variant in form: "${r.colour} / ${r.size}" is listed multiple times. Please combine quantities into one row.`
+          `Duplicate variant in form: "${desc}" is listed multiple times. Please combine quantities into one row.`
         );
         return;
       }
@@ -210,11 +204,11 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
       isNewProduct,
       productId: isNewProduct ? null : selectedProductId,
       productName: isNewProduct ? productName.trim() : activeExistingProduct?.name,
-      category: isNewProduct ? category.trim() : activeExistingProduct?.category,
+      category: isNewProduct ? (category.trim() || null) : (activeExistingProduct?.category || null),
       brand: isNewProduct ? brand.trim() || null : activeExistingProduct?.brand || null,
       variants: rows.map((r) => ({
-        colour: r.colour.trim(),
-        size: r.size.trim(),
+        colour: r.colour.trim() || null,
+        size: r.size.trim() || null,
         qty: Number(r.qty),
         cost_price: Number(r.cost_price),
         selling_price: Number(r.selling_price),
@@ -512,14 +506,13 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
 
               <div>
                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                  Category *
+                  Category (Optional)
                 </label>
                 <input
                   type="text"
-                  required
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder="e.g. Jackets, Shirts"
+                  placeholder="e.g. Jackets, Shirts (optional)"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -612,28 +605,26 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                      Colour *
+                      Colour (Optional)
                     </label>
                     <input
                       type="text"
-                      required
                       value={row.colour}
                       onChange={(e) => updateRow(index, 'colour', e.target.value)}
-                      placeholder="e.g. Black"
+                      placeholder="e.g. Black (optional)"
                       className="w-full px-3 py-2 rounded-xl border border-input bg-background text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                      Size *
+                      Size (Optional)
                     </label>
                     <input
                       type="text"
-                      required
                       value={row.size}
                       onChange={(e) => updateRow(index, 'size', e.target.value)}
-                      placeholder="e.g. M, L, XL"
+                      placeholder="e.g. M, L, XL (optional)"
                       className="w-full px-3 py-2 rounded-xl border border-input bg-background text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -735,10 +726,10 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
           <div className="p-4 rounded-2xl bg-secondary/40 border border-border/70 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                {activeBrd || activeCat}
+                {activeBrd || activeCat || 'Apparel'}
               </span>
               <h4 className="text-base font-extrabold text-foreground">{activeName}</h4>
-              <span className="text-xs text-muted-foreground">Category: {activeCat}</span>
+              <span className="text-xs text-muted-foreground">{activeCat ? `Category: ${activeCat}` : 'No Category'}</span>
             </div>
             <div className="text-right">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
@@ -772,7 +763,7 @@ export function VariantMatrixForm({ existingProducts }: VariantMatrixFormProps) 
                   return (
                     <tr key={i} className="hover:bg-secondary/30 transition-colors">
                       <td className="p-3 font-bold text-foreground">
-                        {r.colour} / {r.size}
+                        {[r.colour, r.size].filter(Boolean).join(' / ') || 'Standard'}
                       </td>
                       <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-bold">
                         +{qty}

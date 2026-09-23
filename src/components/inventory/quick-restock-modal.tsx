@@ -99,7 +99,7 @@ export function QuickRestockModal({
               <h3 className="font-bold text-base">Restock Variant</h3>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {product.name} — <strong className="text-foreground">{variant.colour} / {variant.size}</strong>
+              {product.name} — <strong className="text-foreground">{[variant.colour, variant.size].filter(Boolean).join(' / ') || 'Standard'}</strong>
             </p>
           </div>
           <button

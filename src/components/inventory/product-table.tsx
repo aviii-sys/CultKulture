@@ -87,7 +87,9 @@ export function ProductTable({
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">{product.category}</span>
+                        {product.category && (
+                          <span className="text-xs text-muted-foreground">{product.category}</span>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -103,13 +105,24 @@ export function ProductTable({
                   {/* Colour & Size */}
                   <td className="py-3.5 px-4">
                     <div className="inline-flex items-center gap-1.5 font-medium">
-                      <span className="px-2 py-0.5 rounded-md bg-secondary text-foreground text-xs font-semibold">
-                        {variant.colour}
-                      </span>
-                      <span className="text-muted-foreground">/</span>
-                      <span className="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold border border-sky-200 dark:border-sky-800">
-                        {variant.size}
-                      </span>
+                      {variant.colour && (
+                        <span className="px-2 py-0.5 rounded-md bg-secondary text-foreground text-xs font-semibold">
+                          {variant.colour}
+                        </span>
+                      )}
+                      {variant.colour && variant.size && (
+                        <span className="text-muted-foreground">/</span>
+                      )}
+                      {variant.size && (
+                        <span className="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold border border-sky-200 dark:border-sky-800">
+                          {variant.size}
+                        </span>
+                      )}
+                      {!variant.colour && !variant.size && (
+                        <span className="px-2 py-0.5 rounded-md bg-secondary/80 text-muted-foreground text-xs font-medium italic">
+                          Standard
+                        </span>
+                      )}
                     </div>
                   </td>
 

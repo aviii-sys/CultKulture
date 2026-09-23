@@ -57,7 +57,7 @@ export function StockHistoryModal({
               <h3 className="font-bold text-base text-foreground">Stock Addition History</h3>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {product.name} — <span className="font-semibold text-foreground">{variant.colour} / {variant.size}</span>
+              {product.name} — <span className="font-semibold text-foreground">{[variant.colour, variant.size].filter(Boolean).join(' / ') || 'Standard'}</span>
             </p>
           </div>
           <button

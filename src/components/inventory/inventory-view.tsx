@@ -102,9 +102,9 @@ export function InventoryView({ initialProducts }: InventoryViewProps) {
       if (q) {
         const matchName = product.name.toLowerCase().includes(q);
         const matchBrand = product.brand ? product.brand.toLowerCase().includes(q) : false;
-        const matchCategory = product.category.toLowerCase().includes(q);
-        const matchColour = variant.colour.toLowerCase().includes(q);
-        const matchSize = variant.size.toLowerCase().includes(q);
+        const matchCategory = product.category ? product.category.toLowerCase().includes(q) : false;
+        const matchColour = variant.colour ? variant.colour.toLowerCase().includes(q) : false;
+        const matchSize = variant.size ? variant.size.toLowerCase().includes(q) : false;
 
         if (!matchName && !matchBrand && !matchCategory && !matchColour && !matchSize) {
           return false;

@@ -149,13 +149,22 @@ export function PosCart({
                       {item.product_name}
                     </h4>
                     <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
-                      <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
-                        {item.colour}
-                      </span>
-                      <span>/</span>
-                      <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
-                        {item.size}
-                      </span>
+                      {item.colour && (
+                        <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
+                          {item.colour}
+                        </span>
+                      )}
+                      {item.colour && item.size && <span>/</span>}
+                      {item.size && (
+                        <span className="font-bold px-1.5 py-0.5 rounded-md bg-secondary text-foreground">
+                          {item.size}
+                        </span>
+                      )}
+                      {!item.colour && !item.size && (
+                        <span className="font-medium italic px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+                          Standard
+                        </span>
+                      )}
                     </div>
                   </div>
 

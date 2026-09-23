@@ -36,15 +36,6 @@ export function EditVariantModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!colour.trim()) {
-      setError('Colour is required');
-      return;
-    }
-    if (!size.trim()) {
-      setError('Size is required');
-      return;
-    }
-
     const numSellingPrice = Number(sellingPrice);
     if (isNaN(numSellingPrice) || numSellingPrice < 0) {
       setError('Selling price must be a valid non-negative number');
@@ -63,8 +54,8 @@ export function EditVariantModal({
     const res = await updateVariantAction({
       id: variant.id,
       product_id: product.id,
-      colour: colour.trim(),
-      size: size.trim(),
+      colour: colour.trim() || null,
+      size: size.trim() || null,
       selling_price: numSellingPrice,
       low_stock_threshold: numThreshold,
       archived: isArchived,
@@ -141,28 +132,26 @@ export function EditVariantModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                Colour *
+                Colour (Optional)
               </label>
               <input
                 type="text"
-                required
                 value={colour}
                 onChange={(e) => setColour(e.target.value)}
-                placeholder="e.g. Black"
+                placeholder="e.g. Black (optional)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                Size *
+                Size (Optional)
               </label>
               <input
                 type="text"
-                required
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
-                placeholder="e.g. M, L, 32"
+                placeholder="e.g. M, L, 32 (optional)"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>

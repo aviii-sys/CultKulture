@@ -50,8 +50,8 @@ export interface BillDetailData {
     id: string;
     variant_id: string;
     product_name: string;
-    colour: string;
-    size: string;
+    colour: string | null;
+    size: string | null;
     qty: number;
     unit_selling_price: number;
     line_gross: number;

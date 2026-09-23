@@ -7,8 +7,8 @@ import { ProductImagePlaceholder } from '@/components/common/product-image-place
 
 interface TopSellerItem {
   product_name: string;
-  colour: string;
-  size: string;
+  colour: string | null;
+  size: string | null;
   qty_sold: number;
   revenue: number;
 }
@@ -48,14 +48,14 @@ export function DashboardTopSellers({ items, monthLabel }: DashboardTopSellersPr
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {items.map((item, idx) => (
               <div
-                key={`${item.product_name}-${item.colour}-${item.size}-${idx}`}
+                key={`${item.product_name}-${item.colour ?? ''}-${item.size ?? ''}-${idx}`}
                 className="p-3 rounded-2xl border border-border/70 bg-secondary/30 hover:bg-secondary/60 transition-all card-hover-lift flex flex-col justify-between gap-3"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-14 h-16 shrink-0 rounded-xl overflow-hidden shadow-2xs">
                     <ProductImagePlaceholder
                       name={item.product_name}
-                      colour={item.colour}
+                      colour={item.colour ?? undefined}
                       aspectRatio="aspect-[3/4]"
                     />
                   </div>
@@ -64,12 +64,21 @@ export function DashboardTopSellers({ items, monthLabel }: DashboardTopSellersPr
                       {item.product_name}
                     </h4>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-background text-foreground/80 border border-border/40">
-                        {item.colour}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-background text-primary border border-border/40">
-                        {item.size}
-                      </span>
+                      {item.colour && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-background text-foreground/80 border border-border/40">
+                          {item.colour}
+                        </span>
+                      )}
+                      {item.size && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-background text-primary border border-border/40">
+                          {item.size}
+                        </span>
+                      )}
+                      {!item.colour && !item.size && (
+                        <span className="text-[10px] italic px-1.5 py-0.5 rounded-md bg-background text-muted-foreground border border-border/40">
+                          Standard
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

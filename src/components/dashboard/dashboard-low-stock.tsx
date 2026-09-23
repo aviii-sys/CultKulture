@@ -65,7 +65,7 @@ export function DashboardLowStock({ items }: DashboardLowStockProps) {
                       {item.product_name}
                     </h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {item.colour} · {item.size}
+                      {[item.colour, item.size].filter(Boolean).join(' · ') || 'Standard'}
                     </p>
                   </div>
 

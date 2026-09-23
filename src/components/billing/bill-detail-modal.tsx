@@ -424,12 +424,21 @@ export function BillDetailModal({
                             <td className="p-3 font-medium">
                               <div className="font-bold text-foreground">{item.product_name}</div>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
-                                  {item.colour}
-                                </span>
-                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
-                                  {item.size}
-                                </span>
+                                {item.colour && (
+                                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
+                                    {item.colour}
+                                  </span>
+                                )}
+                                {item.size && (
+                                  <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-foreground">
+                                    {item.size}
+                                  </span>
+                                )}
+                                {!item.colour && !item.size && (
+                                  <span className="text-[10px] italic px-2 py-0.2 rounded-full bg-secondary border border-border/60 text-muted-foreground">
+                                    Standard
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="p-3 text-center font-bold">{item.qty}</td>

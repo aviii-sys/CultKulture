@@ -40,7 +40,7 @@ export async function addStockBatchAction(
     const p_product = isNewProduct || !productId
       ? {
           name: productName?.trim(),
-          category: category?.trim(),
+          category: category ? category.trim() : null,
           brand: brand ? brand.trim() : null,
         }
       : {
@@ -49,8 +49,8 @@ export async function addStockBatchAction(
 
     // Prepare p_variants JSONB
     const p_variants = variants.map((v) => ({
-      colour: v.colour.trim(),
-      size: v.size.trim(),
+      colour: v.colour ? v.colour.trim() : null,
+      size: v.size ? v.size.trim() : null,
       qty: v.qty,
       cost_price: v.cost_price,
       selling_price: v.selling_price,
@@ -76,8 +76,8 @@ export async function addStockBatchAction(
       for (const item of batchResult.variants) {
         const matchingInput = variants.find(
           (v) =>
-            v.colour.toLowerCase().trim() === item.colour?.toLowerCase() &&
-            v.size.toLowerCase().trim() === item.size?.toLowerCase()
+            (v.colour || '').toLowerCase().trim() === (item.colour || '').toLowerCase().trim() &&
+            (v.size || '').toLowerCase().trim() === (item.size || '').toLowerCase().trim()
         );
 
         if (matchingInput && matchingInput.low_stock_threshold !== 2) {
@@ -117,8 +117,8 @@ export async function updateProductAction(
       .from('products')
       .update({
         name,
-        category,
-        brand: brand || null,
+        category: category ? category.trim() : null,
+        brand: brand ? brand.trim() : null,
         archived,
         updated_at: new Date().toISOString(),
       })
@@ -155,26 +155,38 @@ export async function updateVariantAction(
     const supabase = (await createClient()) as any;
 
     // Check for duplicate variant on the same product
-    const { data: existingConflict } = await supabase
+    let query = supabase
       .from('variants')
       .select('id, colour, size')
       .eq('product_id', product_id)
-      .ilike('colour', colour)
-      .ilike('size', size)
-      .neq('id', id)
-      .maybeSingle();
+      .neq('id', id);
+
+    if (colour) {
+      query = query.ilike('colour', colour);
+    } else {
+      query = query.is('colour', null);
+    }
+
+    if (size) {
+      query = query.ilike('size', size);
+    } else {
+      query = query.is('size', null);
+    }
+
+    const { data: existingConflict } = await query.maybeSingle();
 
     if (existingConflict) {
+      const desc = [colour, size].filter(Boolean).join(' / ') || 'Standard variant';
       return {
-        error: `A variant with Colour "${colour}" and Size "${size}" already exists for this product.`,
+        error: `A variant with "${desc}" already exists for this product.`,
       };
     }
 
     const { error } = await supabase
       .from('variants')
       .update({
-        colour,
-        size,
+        colour: colour || null,
+        size: size || null,
         selling_price,
         low_stock_threshold,
         archived,

@@ -79,7 +79,7 @@ export interface Database {
         Row: {
           id: string;
           name: string;
-          category: string;
+          category: string | null;
           brand: string | null;
           archived: boolean;
           created_at: string;
@@ -88,7 +88,7 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
-          category: string;
+          category?: string | null;
           brand?: string | null;
           archived?: boolean;
           created_at?: string;
@@ -97,7 +97,7 @@ export interface Database {
         Update: {
           id?: string;
           name?: string;
-          category?: string;
+          category?: string | null;
           brand?: string | null;
           archived?: boolean;
           created_at?: string;
@@ -108,8 +108,8 @@ export interface Database {
         Row: {
           id: string;
           product_id: string;
-          colour: string;
-          size: string;
+          colour: string | null;
+          size: string | null;
           quantity: number;
           cost_price: number;
           selling_price: number;
@@ -121,8 +121,8 @@ export interface Database {
         Insert: {
           id?: string;
           product_id: string;
-          colour: string;
-          size: string;
+          colour?: string | null;
+          size?: string | null;
           quantity?: number;
           cost_price?: number;
           selling_price?: number;
@@ -134,8 +134,8 @@ export interface Database {
         Update: {
           id?: string;
           product_id?: string;
-          colour?: string;
-          size?: string;
+          colour?: string | null;
+          size?: string | null;
           quantity?: number;
           cost_price?: number;
           selling_price?: number;
@@ -259,8 +259,8 @@ export interface Database {
           bill_id: string;
           variant_id: string;
           product_name: string;
-          colour: string;
-          size: string;
+          colour: string | null;
+          size: string | null;
           qty: number;
           unit_selling_price: number;
           line_gross: number;
@@ -277,8 +277,8 @@ export interface Database {
           bill_id: string;
           variant_id: string;
           product_name: string;
-          colour: string;
-          size: string;
+          colour?: string | null;
+          size?: string | null;
           qty: number;
           unit_selling_price: number;
           line_gross: number;
@@ -295,8 +295,8 @@ export interface Database {
           bill_id?: string;
           variant_id?: string;
           product_name?: string;
-          colour?: string;
-          size?: string;
+          colour?: string | null;
+          size?: string | null;
           qty?: number;
           unit_selling_price?: number;
           line_gross?: number;

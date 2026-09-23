@@ -60,8 +60,8 @@ export function PosProductCatalog({
 
       const matchesVariant = activeVars.some(
         (v) =>
-          v.colour.toLowerCase().includes(q) ||
-          v.size.toLowerCase().includes(q)
+          (v.colour ? v.colour.toLowerCase().includes(q) : false) ||
+          (v.size ? v.size.toLowerCase().includes(q) : false)
       );
 
       return matchesVariant;

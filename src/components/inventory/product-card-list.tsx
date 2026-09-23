@@ -122,7 +122,7 @@ export function ProductCardList({
               <div>
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate">
-                    {product.brand || product.category}
+                    {product.brand || product.category || 'Product'}
                   </span>
                   <span className="text-[10px] text-muted-foreground shrink-0 font-medium">
                     {variants.length} {variants.length === 1 ? 'variant' : 'variants'}
@@ -161,9 +161,10 @@ export function ProductCardList({
                         className="p-1.5 rounded-lg bg-background border border-border/50 flex items-center justify-between text-[10px]"
                       >
                         <div className="flex items-center gap-1 font-semibold truncate">
-                          <span>{v.colour}</span>
-                          <span>/</span>
-                          <span className="text-primary">{v.size}</span>
+                          {v.colour && <span>{v.colour}</span>}
+                          {v.colour && v.size && <span>/</span>}
+                          {v.size && <span className="text-primary">{v.size}</span>}
+                          {!v.colour && !v.size && <span className="text-muted-foreground italic">Standard</span>}
                           <span className="text-muted-foreground font-normal">({v.quantity})</span>
                         </div>
 

@@ -5,8 +5,8 @@ import { Shirt, Sparkles, Tag } from 'lucide-react';
 
 interface ProductImagePlaceholderProps {
   name: string;
-  category?: string;
-  colour?: string;
+  category?: string | null;
+  colour?: string | null;
   aspectRatio?: 'aspect-[3/4]' | 'aspect-[4/5]' | 'aspect-square' | 'aspect-[16/10]';
   className?: string;
   badgeText?: string;
@@ -28,7 +28,7 @@ const colourPaletteMap: Record<string, { bg: string; text: string; icon: string 
   tan: { bg: 'from-amber-200/60 via-stone-200 to-amber-100', text: 'text-stone-800', icon: 'text-stone-600' },
 };
 
-function renderCategoryIcon(cat?: string, className?: string) {
+function renderCategoryIcon(cat?: string | null, className?: string) {
   const c = cat?.toLowerCase() || '';
   if (c.includes('shirt') || c.includes('top') || c.includes('t-shirt') || c.includes('jacket')) {
     return <Shirt className={className} />;
@@ -41,7 +41,7 @@ function renderCategoryIcon(cat?: string, className?: string) {
 
 export function ProductImagePlaceholder({
   name,
-  category = 'Apparel',
+  category,
   colour,
   aspectRatio = 'aspect-[3/4]',
   className = '',
@@ -71,9 +71,13 @@ export function ProductImagePlaceholder({
 
       {/* Top Bar: Category / Badge */}
       <div className="relative z-10 flex items-center justify-between gap-1">
-        <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-xs text-foreground/80 border border-border/40 shadow-2xs">
-          {category}
-        </span>
+        {category ? (
+          <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-xs text-foreground/80 border border-border/40 shadow-2xs">
+            {category}
+          </span>
+        ) : (
+          <span />
+        )}
         {badgeText && (
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground shadow-2xs">
             {badgeText}

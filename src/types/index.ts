@@ -25,8 +25,8 @@ export interface CartItem {
   variant_id: string;
   product_id: string;
   product_name: string;
-  colour: string;
-  size: string;
+  colour: string | null;
+  size: string | null;
   qty: number;
   available_stock: number;
   unit_selling_price: number;
@@ -57,8 +57,8 @@ export interface DashboardSummaryData {
   }>;
   top_sellers: Array<{
     product_name: string;
-    colour: string;
-    size: string;
+    colour: string | null;
+    size: string | null;
     qty_sold: number;
     revenue: number;
   }>;

@@ -12,10 +12,10 @@ import {
 export interface LowStockVariantItem {
   id: string;
   product_name: string;
-  category: string;
+  category: string | null;
   brand: string | null;
-  colour: string;
-  size: string;
+  colour: string | null;
+  size: string | null;
   quantity: number;
   low_stock_threshold: number;
 }
