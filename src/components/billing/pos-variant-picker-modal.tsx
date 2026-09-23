@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Minus, Check, AlertCircle, ShoppingBag } from 'lucide-react';
 import { ProductWithVariants, Variant } from '@/types';
 import { formatIndianRupees } from '@/lib/utils/currency';
@@ -21,6 +22,8 @@ interface PosVariantPickerModalProps {
   existingCartQty?: number;
 }
 
+const emptySubscribe = () => () => {};
+
 export function PosVariantPickerModal({
   product,
   isOpen,
@@ -28,6 +31,18 @@ export function PosVariantPickerModal({
   onAddToCart,
   existingCartQty = 0,
 }: PosVariantPickerModalProps) {
+  const mounted = React.useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  // Lock body scroll when variant picker is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
   const activeVariants = useMemo(() => {
     if (!product) return [];
     return product.variants.filter((v) => !v.archived);
@@ -241,8 +256,15 @@ export function PosVariantPickerModal({
     ? [selectedVariant.colour, selectedVariant.size].filter(Boolean).join(' • ') || 'Standard Variant'
     : '';
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+  if (!isOpen || !product || !mounted) return null;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pos-variant-picker-title"
+      className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
       {/* Background click overlay */}
       <div
         className="fixed inset-0 -z-10"
@@ -250,7 +272,7 @@ export function PosVariantPickerModal({
         aria-hidden="true"
       />
 
-      <div className="bg-card w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-border shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh]">
+      <div className="bg-card text-card-foreground w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-border shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
         {/* Header */}
         <div className="shrink-0 flex items-center gap-3 p-3.5 sm:p-4 border-b border-border bg-secondary/20">
           <div className="w-12 h-14 rounded-xl overflow-hidden shrink-0 border border-border/60">
@@ -274,7 +296,7 @@ export function PosVariantPickerModal({
                 </span>
               )}
             </div>
-            <h3 className="text-base font-bold text-foreground truncate mt-0.5">{product.name}</h3>
+            <h3 id="pos-variant-picker-title" className="text-base font-bold text-foreground truncate mt-0.5">{product.name}</h3>
           </div>
           <button
             type="button"
@@ -527,6 +549,7 @@ export function PosVariantPickerModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CheckCircle2,
   Receipt,
@@ -33,16 +34,29 @@ interface PosSuccessModalProps {
   onViewBill: (billId: string) => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export function PosSuccessModal({
   isOpen,
   billData,
   onNewBill,
   onViewBill,
 }: PosSuccessModalProps) {
+  const mounted = React.useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  // Lock body scroll when success modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [prevBillId, setPrevBillId] = useState<string | null>(null);
 
@@ -207,9 +221,15 @@ export function PosSuccessModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-card w-full max-w-md rounded-3xl border border-border shadow-2xl p-5 sm:p-7 text-center space-y-5 max-h-[95vh] overflow-y-auto">
+  if (!isOpen || !billData || !mounted) return null;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div className="bg-card text-card-foreground w-full max-w-md rounded-3xl border border-border shadow-2xl p-5 sm:p-7 text-center space-y-5 max-h-[95vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         {/* Animated Checkmark Badge */}
         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
           <CheckCircle2 className="w-8 h-8 sm:w-9 h-9" />
@@ -337,6 +357,7 @@ export function PosSuccessModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
